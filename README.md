@@ -1,3 +1,4 @@
+
 # 平面移动游戏与回放系统指南
 
 ## 项目概述
@@ -26,7 +27,7 @@ WALK_SPEED = 250.0  # 基础移动速度（像素/秒）
 SPRINT_SPEED = 320.0  # 冲刺移动速度（像素/秒）
 ACCELERATION = 20.0  # 加速度系数
 FRICTION = 5.0  # 地面摩擦力系数
-RECORD_FPS = 64  # 录制采样率
+RECORD_FPS = 8  # 录制采样率（已更新为8FPS）
 ```
 
 **使用示例**：
@@ -55,7 +56,7 @@ def update(self, pressed_keys, delta_time):
     if pressed_keys[pygame.K_d]: wish_dir[0] += 1
   
     # 3. 归一化方向向量
-    wish_length = math.sqrt(wish_dir[0]**2 + wish_dir[1]**2)
+    wish_length = (wish_dir[0]**2 + wish_dir[1]**2)**0.5
     if wish_length > 0:
         wish_dir[0] /= wish_length
         wish_dir[1] /= wish_length
@@ -71,7 +72,7 @@ def update(self, pressed_keys, delta_time):
         self.velocity[1] += accel_speed * wish_dir[1]
   
     # 6. 应用摩擦力
-    speed = math.sqrt(self.velocity[0]**2 + self.velocity[1]**2)
+    speed = (self.velocity[0]**2 + self.velocity[1]**2)**0.5
     if speed > 0:
         drop = speed * data.FRICTION * delta_time
         new_speed = max(speed - drop, 0)
@@ -102,8 +103,7 @@ def start_recording(self):
     # 写入文件头信息
     self.record_file.write(f"SCREEN_WIDTH: {data.SCREEN_WIDTH}\n")
     self.record_file.write(f"SCREEN_HEIGHT: {data.SCREEN_HEIGHT}\n")
-    self.record_file.write(f"RECORD_FPS: {data.RECORD_FPS}\n")
-    self.record_file.write(f"START_TIME: {time.time()}\n")
+    self.record_file.write(f"START_TIME: {time.time()}\n")  # 移除了RECORD_FPS行
 
 def record_frame(self, player):
     """记录当前帧数据"""
@@ -165,6 +165,12 @@ def get_frame_at_time(self, target_time):
     )
 ```
 
+**新增UI功能**：
+
+- 回放进度条显示当前播放位置
+- 控制面板显示回放状态和操作说明
+- 时间信息显示当前时间和总时长
+
 ### 5. main.py - 主菜单系统
 
 **菜单导航流程**：
@@ -214,7 +220,6 @@ def get_frame_at_time(self, target_time):
 ```
 SCREEN_WIDTH: 1920
 SCREEN_HEIGHT: 1080
-RECORD_FPS: 64
 START_TIME: 1721345678.901
 0.000,960.0,540.0,0.0,0.0,0
 0.015,961.2,539.8,15.3,-1.2,1
@@ -240,6 +245,8 @@ START_TIME: 1721345678.901
 ```python
 # 在player.py中添加
 JUMP_FORCE = 500.0  # 跳跃力度
+GRAVITY = 980.0     # 重力加速度
+GROUND_Y = SCREEN_HEIGHT - 100  # 地面位置
 
 def update(self, pressed_keys, delta_time):
     # 现有代码...
@@ -251,7 +258,7 @@ def update(self, pressed_keys, delta_time):
   
     # 添加重力
     if not self.grounded:
-        self.velocity[1] += 980.0 * delta_time  # 重力加速度
+        self.velocity[1] += GRAVITY * delta_time
   
     # 更新位置...
   
@@ -276,7 +283,9 @@ WALK_SPEED = 350.0
 SPRINT_SPEED = 450.0
 
 # 更高精度的录制
-RECORD_FPS = 128  # 提高录制采样率
+# 注意：需要在game.py中手动修改record_interval
+# 在Game类的__init__中添加：
+# self.record_interval = 1.0 / 64  # 64FPS录制
 ```
 
 ### 3. 添加游戏元素
@@ -421,9 +430,10 @@ def record_network_frame(self):
 
 **问题：回放不准确**
 
-- 提高录制帧率：
+- 提高录制帧率（在game.py中修改）：
   ```python
-  RECORD_FPS = 128  # 在data.py中
+  # 在Game类的__init__中添加：
+  self.record_interval = 1.0 / 24  # 24FPS录制
   ```
 - 在回放系统中添加插值补偿：
   ```python
