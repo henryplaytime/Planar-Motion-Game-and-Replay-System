@@ -1,0 +1,45 @@
+{
+  "metadata": {
+    "version": "1.0",
+    "last_updated": "2025-7-21",
+    "author": "游戏开发团队",
+    "description": "游戏物品系统配置"
+  },
+  
+  "item_types": {
+    "consumable": {
+      "name": "消耗品",
+      "description": "一次性使用的物品"
+    },
+    "equipment": {
+      "name": "装备",
+      "description": "可装备的物品"
+    },
+    "key_item": {
+      "name": "关键物品",
+      "description": "剧情相关的物品"
+    }
+  },
+  
+  "items": {
+    "adrenaline": {
+      "id": 1001,
+      "string_id": "item_adrenaline",
+      "name": "肾上腺素",
+      "description": "注射后短时间内大幅提升移动速度",
+      "type": "consumable",
+      "category": "buff",
+      "icon": "Adrenaline.png",
+      "icon_size": [64, 64],
+      "color": [255, 0, 102],
+      "effects": {
+        "speed_multiplier": 1.5,
+        "duration": 5.0,
+        "cooldown": 15.0
+      },
+      "inventory": {
+        "max_carry": 3
+      }
+    }
+  }
+}
