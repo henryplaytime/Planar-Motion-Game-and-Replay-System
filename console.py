@@ -42,6 +42,7 @@ class Console:
         self.commands = {}
         self.last_resize_time = 0
         self.scroll_offset = 0  # 滚动偏移量
+        self.last_surface_create_time = 0  # 添加初始化
         
         # 控制台尺寸设置（初始值，实际值将在渲染时根据屏幕确定）
         self.console_height = 250  # 初始高度
@@ -128,8 +129,9 @@ class Console:
         if len(self.output_lines) > self.max_output_lines:
             self.output_lines = self.output_lines[-self.max_output_lines:]
         
-        # 自动滚动到最新内容
-        self.scroll_offset = 0
+        # 自动滚动到最新内容（滚动到底部）
+        max_scroll = max(0, len(self.output_lines) - self.max_output_lines)
+        self.scroll_offset = max_scroll
 
     def handle_event(self, event):
         """
@@ -288,23 +290,18 @@ class Console:
         
         # 处理控制台高度调整
         if self.state == ConsoleState.RESIZING:
+            # 获取鼠标当前位置（限制在窗口范围内）
+            mouse_pos = list(pygame.mouse.get_pos())
+            mouse_pos[1] = max(0, min(mouse_pos[1], screen.get_height()))
+            
+            # 直接使用像素差值计算高度变化
             delta_y = mouse_pos[1] - self.drag_start_y
-        
-            # 将像素变化转换为原始高度变化
-            height_scale = screen.get_height() / data.BASE_HEIGHT
-            height_delta = delta_y / height_scale
-        
-            new_height = self.drag_start_height + height_delta
-        
-        # 限制在最小和最大高度之间
-            if new_height < self.min_height:
-                new_height = self.min_height
-            elif new_height > self.max_height:
-                new_height = self.max_height
+            new_height = self.drag_start_height + delta_y
+            
+            # 限制在最小和最大高度之间
+            new_height = max(self.min_height, min(new_height, self.max_height))
             
             self.console_height = int(new_height)
-        
-            # 更新最大显示行数
             self.max_output_lines = max(5, int((self.console_height - 60) / 20))
             
             return True
@@ -328,8 +325,8 @@ class Console:
 
     def _handle_mouse_wheel(self, event):
         """处理鼠标滚轮事件"""
-        # 更新滚动偏移
-        self.scroll_offset += event.y
+        # 更新滚动偏移 - 向上滚动减少偏移，向下滚动增加偏移
+        self.scroll_offset -= event.y
         
         # 限制滚动范围
         max_scroll = max(0, len(self.output_lines) - self.max_output_lines)
@@ -422,14 +419,19 @@ class Console:
 
     def update(self):
         """更新控制台状态"""
-        if self.state != ConsoleState.OPEN:
-            return
-            
-        # 光标闪烁
-        current_time = time.time()
-        if current_time - self.cursor_timer > 0.5:
-            self.cursor_visible = not self.cursor_visible
-            self.cursor_timer = current_time
+        if self.state == ConsoleState.OPEN:
+            # 光标闪烁
+            current_time = time.time()
+            if current_time - self.cursor_timer > 0.5:
+                self.cursor_visible = not self.cursor_visible
+                self.cursor_timer = current_time
+                
+        # 处理RESIZING状态下鼠标释放的情况
+        elif self.state == ConsoleState.RESIZING:
+            # 检查鼠标左键是否释放
+            if not pygame.mouse.get_pressed()[0]:
+                self.state = ConsoleState.OPEN
+                pygame.mouse.set_cursor(pygame.SYSTEM_CURSOR_ARROW)
 
     def _create_surfaces(self, screen):
         """创建控制台所需的表面"""
@@ -463,19 +465,19 @@ class Console:
              
         try:
             # 确保表面已创建
-
             current_time = time.time()
             need_create = (
                 self.overlay is None or 
                 self.console_bg is None or 
                 self.font is None or
-                self.console_bg.get_height() != data.scale_value(self.console_height, screen, False) or
-                current_time - self.last_surface_create_time > 0.5  # 限制创建频率
+                (self.console_bg.get_width(), self.console_bg.get_height()) != (screen.get_width(), data.scale_value(self.console_height, screen, False)) or
+                current_time - self.last_surface_create_time > 1.0  # 限制创建频率为1秒
             )
         
             if need_create:
                 self._create_surfaces(screen)
                 self.last_surface_create_time = current_time
+
             if self.overlay is None or self.console_bg is None or self.font is None:
                 self._create_surfaces(screen)
                 # 如果创建后仍然无效，则放弃渲染
@@ -510,17 +512,25 @@ class Console:
             output_area_height = scaled_console_height - scaled_60
             
             # 计算可显示的行数
-            visible_lines = int(min(self.max_output_lines, output_area_height // scaled_20))
+            visible_lines = min(self.max_output_lines, int(output_area_height // scaled_20))
+            
+            # 计算总行数
+            total_lines = len(self.output_lines)
+            
+            # 计算最大滚动量
+            max_scroll = max(0, total_lines - visible_lines)
+            
+            # 确保滚动偏移在有效范围内
+            if self.scroll_offset > max_scroll:
+                self.scroll_offset = max_scroll
             
             # 计算滚动条参数
-            total_lines = len(self.output_lines)
             if total_lines > visible_lines:
                 # 滚动条高度与可见区域比例成比例
                 self.scroll_bar_height = max(20, int((visible_lines / total_lines) * output_area_height))
                 scroll_area_height = output_area_height - self.scroll_bar_height
                 
                 # 计算滚动条位置
-                max_scroll = total_lines - visible_lines
                 scroll_percentage = self.scroll_offset / max_scroll if max_scroll > 0 else 0
                 self.scroll_bar_y = scaled_10 + int(scroll_percentage * scroll_area_height)
                 
@@ -539,17 +549,13 @@ class Console:
                 pygame.draw.rect(screen, (100, 150, 200), self.scroll_bar_rect)
             else:
                 self.scroll_bar_height = 0
-                self.scroll_offset = 0
+            
+            # 计算起始索引和结束索引
+            start_index = self.scroll_offset
+            end_index = min(start_index + visible_lines, total_lines)
             
             # 绘制输出文本
             y_pos = scaled_10
-
-            # 确保所有索引都是整数
-            start_index = max(0, len(self.output_lines) - visible_lines - self.scroll_offset)
-            start_index = int(start_index)
-            end_index = min(start_index + visible_lines, len(self.output_lines))
-            end_index = int(end_index)
-
             for i in range(start_index, end_index):
                 if i >= len(self.output_lines) or i < 0:
                     continue
