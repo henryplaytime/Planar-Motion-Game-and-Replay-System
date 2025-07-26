@@ -1,5 +1,5 @@
 
-# 平面移动游戏与回放系统 (版本0.2.2)
+# 平面移动游戏与回放系统 (版本0.2.3)
 
 ## 项目名称
 
@@ -14,10 +14,28 @@
 * **灵活回放系统**：支持暂停、快进、后退、变速和精确跳转
 * **模块化架构**：清晰分离游戏逻辑、物理计算和UI渲染
 * **交互式控制台**：实时执行命令和调试游戏
+* **肾上腺素系统**：短时提升移动速度的特殊能力
 
 ---
 
 ## 版本历史更新
+
+### v0.2.3 (2025-07-26) - 肾上腺素系统与控制台增强
+
+* **肾上腺素效果集成**：
+  * 完全集成肾上腺素效果系统
+  * 添加肾上腺素激活视觉反馈（红色粒子效果）
+  * 肾上腺素参数可在item.json中配置
+* **控制台改进**：
+  * 控制台高度可通过 `data.CONSOLE_HEIGHT`参数配置
+  * 优化控制台显示效果
+  * 修复控制台滚动问题
+* **命令系统更新**：
+  * 重新启用 `give`命令
+  * 新增 `replay`命令（强制播放指定回放文件）
+* **代码重构**：
+  * 优化Replay_System.py架构
+  * 优化game.py架构
 
 ### v0.2.2 (2025-07-23) - 框架重置与控制台优化
 
@@ -58,7 +76,10 @@ WALK_SPEED = 250.0  # 基础移动速度
 SPRINT_SPEED = 320.0  # 冲刺移动速度
 ACCELERATION = 20.0  # 加速度系数
 FRICTION = 5.0  # 地面摩擦力系数
-RECORD_FPS = 8  # 录制采样率
+RECORD_FPS = 64  # 录制采样率
+
+# 控制台高度配置
+CONSOLE_HEIGHT = 400  # 控制台默认高度
 
 # 颜色定义
 BACKGROUND = (30, 30, 50)  # 背景色
@@ -73,6 +94,7 @@ ADRENALINE_COLOR = (255, 50, 50, 180)  # 肾上腺素效果色
 * 实现基于物理的角色移动系统
 * 处理碰撞检测和边界限制
 * 管理玩家状态（位置、速度、冲刺状态）
+* 肾上腺素效果激活与冷却管理
 
 **关键属性与方法**：
 
@@ -83,50 +105,42 @@ class Player:
         self.velocity = [0.0, 0.0]  # 速度向量
         self.sprinting = False  # 冲刺状态
         self.grounded = True  # 地面状态
-      
+        self.adrenaline_active = False  # 肾上腺素激活状态
+        self.adrenaline_active_end = 0.0  # 激活结束时间
+        self.adrenaline_cooldown_end = 0.0  # 冷却结束时间
+        self.speed_multiplier = 1.0  # 速度倍率
+    
     def update(self, pressed_keys, delta_time):
-        # 物理移动系统实现（见下方详解）
+        # 物理移动系统实现（包含肾上腺素效果）
   
-    def check_bounds(self):
-        # 防止玩家移出屏幕边界
+    def activate_adrenaline(self, duration, cooldown, speed_multiplier):
+        # 激活肾上腺素效果
+        current_time = pygame.time.get_ticks() / 1000.0
+        # 检查冷却状态
+        if current_time < self.adrenaline_cooldown_end:
+            return False
+        # 激活效果
+        self.adrenaline_active = True
+        self.adrenaline_active_end = current_time + duration
+        self.adrenaline_cooldown_end = current_time + cooldown
+        self.speed_multiplier = speed_multiplier
+        return True
 ```
 
-**物理系统详解**：
+**肾上腺素集成物理系统**：
 
 ```python
 def update(self, pressed_keys, delta_time):
-    # 1. 确定最大速度（行走或冲刺）
-    max_speed = data.SPRINT_SPEED if self.sprinting else data.WALK_SPEED
+    # 更新肾上腺素状态
+    current_time = pygame.time.get_ticks() / 1000.0
+    if self.adrenaline_active and current_time >= self.adrenaline_active_end:
+        self.adrenaline_active = False
+        self.speed_multiplier = 1.0
   
-    # 2. 计算期望方向向量
-    wish_dir = [0.0, 0.0]
-    if pressed_keys[pygame.K_w]: wish_dir[1] -= 1
-    if pressed_keys[pygame.K_s]: wish_dir[1] += 1
-    # ...其他方向处理
-  
-    # 3. 归一化方向向量
-    wish_length = (wish_dir[0]**2 + wish_dir[1]**2)**0.5
-    if wish_length > 0:
-        wish_dir[0] /= wish_length
-        wish_dir[1] /= wish_length
-  
-    # 4. 计算速度投影
-    current_speed = self.velocity[0]*wish_dir[0] + self.velocity[1]*wish_dir[1]
-  
-    # 5. 应用加速度
-    add_speed = max_speed - current_speed
-    if add_speed > 0:
-        accel_speed = min(data.ACCELERATION * max_speed * delta_time, add_speed)
-        self.velocity[0] += accel_speed * wish_dir[0]
-        self.velocity[1] += accel_speed * wish_dir[1]
-  
-    # 6. 应用摩擦力
-    speed = (self.velocity[0]**2 + self.velocity[1]**2)**0.5
-    if speed > 0:
-        drop = speed * data.FRICTION * delta_time
-        new_speed = max(speed - drop, 0)
-        self.velocity[0] *= new_speed / speed
-        self.velocity[1] *= new_speed / speed
+    # 1. 确定最大速度（考虑肾上腺素倍率）
+    base_speed = data.SPRINT_SPEED if self.sprinting else data.WALK_SPEED
+    max_speed = base_speed * self.speed_multiplier
+    ...
 ```
 
 ### 3. `game.py` - 游戏主逻辑
@@ -137,185 +151,235 @@ def update(self, pressed_keys, delta_time):
 * 处理游戏事件（键盘/窗口大小）
 * 实现录制系统（开始/停止录制）
 * 协调玩家、控制台和录制系统
+* 肾上腺素效果集成
 
-**关键属性与方法**：
+**肾上腺素效果激活**：
 
 ```python
-class Game:
-    def __init__(self, screen):
-        self.running = True  # 游戏运行状态
-        self.recording = False  # 录制状态
-        self.record_file = None  # 录制文件对象
-        self.player = Player()  # 玩家实例
-        self.console = console.Console(self)  # 控制台实例
-      
-    def start_recording(self):
-        # 开始录制实现（见下方详解）
-      
-    def stop_recording(self):
-        # 停止录制
-      
-    def run(self):
-        # 游戏主循环
+def update(self):
+    ...
+    # 处理肾上腺素激活
+    if pressed_keys[pygame.K_q] and not self.last_q_pressed:
+        # 检查是否在冷却时间内
+        if current_time >= self.player.adrenaline_cooldown_end:
+            # 激活肾上腺素效果
+            success = self.player.activate_adrenaline(
+                self.adrenaline_config["duration"],
+                self.adrenaline_config["cooldown"],
+                self.adrenaline_config["speed_multiplier"]
+            )
+            if success:
+                print("肾上腺素激活!")
+  
+    self.last_q_pressed = pressed_keys[pygame.K_q]
+    ...
 ```
 
-**录制系统详解**：
+**录制系统更新（记录肾上腺素状态）**：
 
 ```python
-def start_recording(self):
-    timestamp = time.strftime("%Y%m%d_%H%M%S")
-    filename = f"game_recording_{timestamp}.dem"
-    self.record_file = open(filename, 'w')
-  
-    # 写入文件头信息
-    self.record_file.write(f"VERSION: {data.RECORD_VERSION}\n")
-    self.record_file.write(f"SCREEN_WIDTH: {data.SCREEN_WIDTH}\n")
-    self.record_file.write(f"SCREEN_HEIGHT: {data.SCREEN_HEIGHT}\n")
-    self.record_file.write(f"RECORD_FPS: {data.RECORD_FPS}\n")
-    self.record_file.write(f"START_TIME: {time.time()}\n")
+def record_frame(self, player, pressed_keys):
+    ...
+    # 记录状态快照（包含肾上腺素状态）
+    if current_time - self.last_snapshot_time >= snapshot_interval:
+        self.record_file.write(
+            f"S:{current_time:.3f},"
+            f"{player.position[0]:.3f},{player.position[1]:.3f},"
+            f"{player.velocity[0]:.3f},{player.velocity[1]:.3f},"
+            f"{int(player.sprinting)},"
+            f"{int(player.adrenaline_active)}\n"  # 记录肾上腺素状态
+        )
+        self.last_snapshot_time = current_time
 ```
 
 ### 4. `Replay_System.py` - 回放系统
 
-**核心功能**：
-
-* 加载和解析录制文件
-* 实现回放控制（播放/暂停/快进/后退）
-* 应用插值快照实现平滑回放
-* 渲染回放UI界面
-
-**关键类与方法**：
+**肾上腺素回放效果实现**：
 
 ```python
-class GameReplayer:
-    def __init__(self, filename, screen):
-        self.filename = filename  # 回放文件名
-        self.state = ReplayState.PLAYING  # 回放状态
-        self.playback_speed = 1.0  # 回放速度
-        self.current_time = 0.0  # 当前回放时间
+def apply_interpolated_snapshot(self):
+    ...
+    # 处理肾上腺素激活
+    adrenaline = prev.adrenaline if blend < 0.5 else next.adrenaline
+    if adrenaline and not self.adrenaline_active:
+        self._activate_adrenaline_effect()  # 激活粒子效果
+    self.adrenaline_active = adrenaline
+    ...
+  
+def _activate_adrenaline_effect(self):
+    """激活肾上腺素特效(创建粒子)"""
+    self.adrenaline_particles = []
+    for _ in range(20):
+        self._create_adrenaline_particle()
       
-    def load_recording(self):
-        # 加载录制文件
-      
-    def update(self, delta_time):
-        # 更新回放状态
-      
-    def draw_ui(self, screen):
-        # 渲染回放UI
+def _create_adrenaline_particle(self):
+    """创建单个肾上腺素粒子"""
+    angle = random.uniform(0, 2 * math.pi)
+    speed = random.uniform(50, 200)
+    size = random.uniform(3, 10)
+    self.adrenaline_particles.append({
+        'pos': list(self.player.position),  # 初始位置为玩家位置
+        'vel': [math.cos(angle) * speed, math.sin(angle) * speed],  # 速度向量
+        'size': size,  # 粒子大小
+        'life': 1.0,  # 当前生命周期
+        'max_life': random.uniform(0.3, 0.8)  # 最大生命周期
+    })
 ```
-
-**回放控制功能**：
-
-| 按键 | 功能      | 实现方式                            |
-| ---- | --------- | ----------------------------------- |
-| 空格 | 播放/暂停 | 切换PLAYING/PAUSED状态              |
-| →   | 快进      | 设置为FAST_FORWARD状态              |
-| ←   | 后退      | 设置为REWIND状态                    |
-| ↑   | 加速      | `playback_speed += 0.5`(最大5.0)  |
-| ↓   | 减速      | `playback_speed -= 0.5`(最小0.1)  |
-| J    | 跳转      | 输入目标时间并设置 `current_time` |
-| ESC  | 退出      | 结束回放循环                        |
 
 ### 5. `console.py` - 控制台系统
 
-**核心功能**：
+**新增replay命令实现**：
 
-* 实现游戏内控制台功能
-* 支持命令输入、历史记录和自动补全
-* 管理命令注册和执行
-* 渲染控制台界面
+```python
+def _cmd_replay(self, args, game=None):
+    """
+    强制读取并播放指定的回放文件命令
+  
+    参数:
+    - args: 命令参数列表
+    - game: 游戏实例
+    """
+    if not game or not hasattr(game, 'force_replay'):
+        self.add_output("错误: 未连接到游戏实例或游戏不支持强制回放功能")
+        return
+      
+    if not args:
+        # 如果没有提供文件名，列出所有可用回放文件
+        replay_files = glob.glob("*.dem")
+        if not replay_files:
+            self.add_output("没有找到回放文件")
+            return
+          
+        self.add_output("可用回放文件:")
+        for i, file in enumerate(replay_files):
+            self.add_output(f"  {i+1}. {file}")
+        self.add_output("使用: replay [文件名 或 编号]")
+        return
+      
+    # 尝试将参数解释为索引或文件名
+    replay_files = glob.glob("*.dem")
+    file_arg = args[0].strip()
+  
+    # 检查是否是数字索引
+    if file_arg.isdigit():
+        index = int(file_arg) - 1
+        if 0 <= index < len(replay_files):
+            filename = replay_files[index]
+        else:
+            self.add_output(f"错误: 无效的索引 {file_arg}，可用索引范围 1-{len(replay_files)}")
+            return
+    else:
+        # 直接使用文件名
+        filename = file_arg
+        # 确保文件扩展名正确
+        if not filename.endswith(".dem"):
+            filename += ".dem"
+      
+        # 检查文件是否存在
+        if not os.path.exists(filename):
+            self.add_output(f"错误: 文件 '{filename}' 不存在")
+            return
+  
+    # 调用游戏实例的强制回放方法
+    try:
+        game.force_replay(filename)
+        self.add_output(f"正在强制播放回放文件: {filename}")
+        self.add_output("关闭控制台后回放将开始...")
+    except Exception as e:
+        self.add_output(f"播放回放失败: {str(e)}")
+```
 
-**关键类与属性**：
+**控制台高度配置**：
 
 ```python
 class Console:
     def __init__(self, game_instance=None):
-        self.state = ConsoleState.CLOSED  # 控制台状态
-        self.core = ConsoleCore()  # 控制台逻辑核心
-        self.ui = ConsoleUI()  # 控制台UI渲染
-        self.game = game_instance  # 关联的游戏实例
-      
-    def toggle(self):
-        # 切换控制台打开/关闭状态
-      
-    def handle_event(self, event):
-        # 处理控制台输入事件
+        ...
+        self.ui.console_height = data.CONSOLE_HEIGHT  # 使用配置的高度
 ```
 
-**控制台命令示例**：
+### 6. `item.py` - 物品系统
 
-| 命令   | 参数   | 功能              | 例子      |
-| ------ | ------ | ----------------- | --------- |
-| help   | 无     | 显示所有可用命令  | help      |
-| clear  | 无     | 清除控制台输出    | clear     |
-| exit   | 无     | 关闭控制台        | exit      |
-| time   | 无     | 显示游戏运行时间  | time      |
-| fps    | 无     | 显示当前帧率      | fps       |
-| pos    | 无     | 显示玩家坐标      | pos       |
-| speed  | [数值] | 设置玩家移动速度  | speed 260 |
-| record | 无     | 开始/停止录制     | record    |
-| show   | 无     | 显示/隐藏检测面板 | show      |
-
-### 6. `items.py` - 物品系统
-
-**核心功能**：
-
-* 管理游戏物品系统
-* 加载物品配置（JSON文件）
-* 实现物品使用逻辑
-
-**关键类与方法**：
+**肾上腺素物品实现**：
 
 ```python
-class Item:
-    def __init__(self, item_id):
-        self.id = item_id  # 物品ID
-        self.config = self._load_config(item_id)  # 物品配置
-      
-    def use(self, player):
-        # 使用物品（抽象方法）
-      
 class AdrenalineItem(Item):
+    """
+    肾上腺素物品类
+  
+    功能概述:
+    1. 实现肾上腺素物品的具体效果
+    2. 管理物品的激活和冷却
+    """
+  
+    def __init__(self):
+        """初始化肾上腺素物品"""
+        super().__init__("adrenaline")
+  
     def use(self, player):
-        # 肾上腺素物品的具体实现
+        """
+        使用肾上腺素物品
+      
+        返回:
+        - bool: 使用是否成功
+        """
+        # 获取配置
+        effects = self.config.get("effects", {})
+        duration = effects.get("duration", 5.0)
+        cooldown = effects.get("cooldown", 15.0)
+        speed_multiplier = effects.get("speed_multiplier", 1.5)
+      
+        # 激活肾上腺素效果
+        return player.activate_adrenaline(duration, cooldown, speed_multiplier)
 ```
 
-**物品配置示例**：
+### 7. `main.py` - 游戏入口
+
+**无重大变更**
+
+---
+
+## 肾上腺素系统配置说明
+
+肾上腺素效果参数可通过 `config/item.json`文件配置：
 
 ```json
 {
   "adrenaline": {
     "name": "肾上腺素",
-    "description": "短时间内大幅提升移动速度",
-    "image_path": "assets/adrenaline.png",
-    "duration": 10.0,
-    "cooldown": 30.0,
-    "speed_multiplier": 1.8
+    "description": "注射后短时间内大幅提升移动速度",
+    "effects": {
+      "speed_multiplier": 1.5,  # 速度倍率 (默认1.5倍)
+      "duration": 5.0,          # 持续时间 (秒)
+      "cooldown": 15.0          # 冷却时间 (秒)
+    }
   }
 }
 ```
 
-### 7. `main.py` - 游戏入口
+**使用方法**：
 
-**核心功能**：
+1. 游戏中按 `Q`键激活肾上腺素效果
+2. 控制台使用 `give adrenaline`命令直接获得效果
+3. 效果激活期间显示红色粒子特效
 
-* 游戏启动入口
-* 显示主菜单界面
-* 处理游戏模式选择（开始游戏/回放游戏/退出）
+---
 
-**关键方法**：
+## 控制台命令更新
 
-```python
-def main_menu():
-    # 初始化Pygame和屏幕
-    # 显示主菜单选项
-    # 处理用户选择
-  
-    # 菜单选项：
-    # - 开始游戏: 进入游戏主循环
-    # - 回放游戏: 进入回放模式
-    # - 退出: 退出游戏
-```
+| 命令             | 参数          | 功能                 | 例子             |
+| ---------------- | ------------- | -------------------- | ---------------- |
+| **give**   | adrenaline    | 给予玩家肾上腺素效果 | give adrenaline  |
+| **replay** | [文件名/编号] | 强制播放指定回放文件 | replay demo1.dem |
+| help             | 无            | 显示所有可用命令     | help             |
+| clear            | 无            | 清除控制台输出       | clear            |
+| exit             | 无            | 关闭控制台           | exit             |
+| time             | 无            | 显示游戏运行时间     | time             |
+| fps              | 无            | 显示当前帧率         | fps              |
+| pos              | 无            | 显示玩家坐标         | pos              |
+| speed            | [数值]        | 设置玩家移动速度     | speed 260        |
+| record           | 无            | 开始/停止录制        | record           |
+| show             | 无            | 显示/隐藏检测面板    | show             |
 
 ---
 
@@ -326,6 +390,8 @@ def main_menu():
 3. **添加游戏元素**：实现障碍物、收集物等游戏对象
 4. **扩展物品系统**：添加新物品类型（如生命药水）
 5. **网络功能扩展**：添加多人游戏支持
+6. **肾上腺素视觉增强**：添加屏幕特效和角色视觉效果
+7. **回放系统优化**：解决replay命令的兼容性问题
 
 ---
 
@@ -338,7 +404,7 @@ def main_menu():
 
 ## 感谢词
 
-感谢所有参与测试的用户和贡献者，特别感谢开源社区提供的宝贵建议和支持。我将继续努力完善这个项目！
+感谢所有参与测试的用户和贡献者，特别感谢开源社区提供的宝贵建议和支持。我们将继续努力完善这个项目！
 
 **项目仓库**: [https://github.com/henryplaytime/Planar-Motion-Game-and-Replay-System](https://github.com/henryplaytime/Planar-Motion-Game-and-Replay-System)
 

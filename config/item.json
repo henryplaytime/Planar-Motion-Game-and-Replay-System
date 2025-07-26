@@ -30,12 +30,13 @@
       "type": "consumable",
       "category": "buff",
       "icon": "Adrenaline.png",
+      "image_path": ".../Adrenaline.png",  
       "icon_size": [64, 64],
       "color": [255, 0, 102],
       "effects": {
         "speed_multiplier": 1.5,
         "duration": 5.0,
-        "cooldown": 15.0
+        "cooldown": 2.0
       },
       "inventory": {
         "max_carry": 3

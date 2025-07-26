@@ -16,7 +16,7 @@ import math
 import traceback
 from enum import Enum
 from collections import namedtuple
-from data import SCREEN_WIDTH, SCREEN_HEIGHT, BACKGROUND, load_player_image, get_font, calculate_speed, PANEL_COLOR, TEXT_COLOR, INFO_COLOR
+from data import SCREEN_WIDTH, SCREEN_HEIGHT, BACKGROUND, load_player_image, get_font, calculate_speed, PANEL_COLOR, TEXT_COLOR, INFO_COLOR, UI_PADDING, UI_LINE_SPACING, UI_PANEL_ALPHA, ADRENALINE_COLOR
 from player import Player
 
 class ReplayState(Enum):
@@ -432,12 +432,12 @@ class GameReplayer:
         state_width = font.size(state_text)[0]
         
         max_width = max(max_width, time_width, state_width)
-        panel_width = max_width + 2 * data.UI_PADDING
-        panel_height = data.UI_PADDING * 2 + (len(controls) + 3) * data.UI_LINE_SPACING
+        panel_width = max_width + 2 * UI_PADDING
+        panel_height = UI_PADDING * 2 + (len(controls) + 3) * UI_LINE_SPACING
         
         # 创建面板
         panel = pygame.Surface((panel_width, panel_height), pygame.SRCALPHA)
-        panel.fill((*data.PANEL_COLOR[:3], data.UI_PANEL_ALPHA))
+        panel.fill((*PANEL_COLOR[:3], UI_PANEL_ALPHA))
         pygame.draw.rect(panel, (100, 150, 200), panel.get_rect(), 2)
         
         # 定位面板
@@ -449,23 +449,23 @@ class GameReplayer:
         screen.blit(panel, panel_pos)
         
         # 渲染标题
-        title = title_font.render("游戏回放系统", True, data.INFO_COLOR)
+        title = title_font.render("游戏回放系统", True, INFO_COLOR)
         screen.blit(title, (panel_pos[0] + (panel_width - title.get_width()) // 2, panel_pos[1] + 10))
         
         # 渲染时间信息
-        time_text = font.render(time_text, True, data.TEXT_COLOR)
+        time_text = font.render(time_text, True, TEXT_COLOR)
         screen.blit(time_text, (panel_pos[0] + (panel_width - time_text.get_width()) // 2, panel_pos[1] + 50))
         
         # 渲染状态信息
-        state_text = font.render(state_text, True, data.TEXT_COLOR)
+        state_text = font.render(state_text, True, TEXT_COLOR)
         screen.blit(state_text, (panel_pos[0] + (panel_width - state_text.get_width()) // 2, panel_pos[1] + 80))
         
         # 渲染控制说明
         y_pos = panel_pos[1] + 120
         for text in controls:
-            ctrl_text = font.render(text, True, data.TEXT_COLOR)
-            screen.blit(ctrl_text, (panel_pos[0] + data.UI_PADDING, y_pos))
-            y_pos += data.UI_LINE_SPACING
+            ctrl_text = font.render(text, True, TEXT_COLOR)
+            screen.blit(ctrl_text, (panel_pos[0] + UI_PADDING, y_pos))
+            y_pos += UI_LINE_SPACING
     
     def draw_progress_bar(self, screen):
         """
@@ -510,7 +510,7 @@ class GameReplayer:
         )
         time_pos = (
             (screen.get_width() - time_text.get_width()) // 2,
-            bar_y - data.UI_LINE_SPACING
+            bar_y - UI_LINE_SPACING
         )
         screen.blit(time_text, time_pos)
 
@@ -525,7 +525,7 @@ class GameReplayer:
         for particle in self.adrenaline_particles:
             # 计算透明度(基于生命周期)
             alpha = int(255 * (particle['life'] / particle['max_life']))
-            color = (*data.ADRENALINE_COLOR[:3], alpha)
+            color = (*ADRENALINE_COLOR[:3], alpha)
             # 绘制粒子
             pygame.draw.circle(
                 screen, 
@@ -540,7 +540,7 @@ class GameReplayer:
             radius = 50 + 10 * pulse
             pygame.draw.circle(
                 screen, 
-                data.ADRENALINE_COLOR, 
+                ADRENALINE_COLOR, 
                 (int(self.player.position[0]), int(self.player.position[1])),
                 int(radius), 
                 3
@@ -615,7 +615,7 @@ def create_background_grid(screen):
     # 计算地面位置
     ground_y = screen.get_height() - data.scale_value(100, screen, False)
     background_grid = pygame.Surface(screen.get_size())
-    background_grid.fill(data.BACKGROUND)
+    background_grid.fill(BACKGROUND)
     
     # 计算网格大小
     grid_size = data.scale_value(40, screen)
@@ -646,11 +646,214 @@ def run_replay_mode(screen):
     """
     pygame.display.set_caption("游戏回放模式")
     clock = pygame.time.Clock()
-    running_replay = True
-    pygame.font.init()
     
     # 查找所有回放文件
     replay_files = glob.glob("*.dem")
+    
+    # 如果没有回放文件，显示提示信息
     if not replay_files:
-        # 没有回放文件时显示提示
-        font = pygame.font.SysFont("simhei", data.REPLAY_TITLE_FONT_SIZE)
+        no_replay_message(screen)
+        return
+    
+    # 添加文件选择界面
+    selected_index = select_replay_file(screen, replay_files)
+    if selected_index is None:  # 用户取消选择
+        return
+    
+    # 选择用户指定的回放文件
+    replay_file = replay_files[selected_index]
+    replayer = GameReplayer(replay_file, screen)
+    
+    # 创建背景网格
+    background_grid = create_background_grid(screen)
+    
+    # 回放主循环
+    running_replay = True
+    while running_replay:
+        # 处理事件
+        running_replay = handle_replay_events(replayer)
+        
+        # 更新回放器
+        delta_time = clock.tick(60) / 1000.0  # 转换为秒
+        replayer.update(delta_time)
+        
+        # 渲染回放场景
+        render_replay_scene(screen, background_grid, replayer)
+        
+        pygame.display.flip()
+
+def select_replay_file(screen, replay_files):
+    """
+    显示回放文件选择界面
+    
+    参数:
+    - screen: 游戏屏幕对象
+    - replay_files: 回放文件列表
+    
+    返回:
+    - int: 选择的文件索引，或 None(用户取消)
+    """
+    clock = pygame.time.Clock()
+    selected_index = 0
+    running = True
+    
+    # 获取字体
+    title_font_size = data.get_scaled_font(36, screen)
+    item_font_size = data.get_scaled_font(24, screen)
+    title_font = data.get_font(title_font_size)
+    item_font = data.get_font(item_font_size)
+    
+    # 计算面板尺寸
+    max_width = 0
+    for file in replay_files:
+        text_width = item_font.size(file)[0]
+        if text_width > max_width:
+            max_width = text_width
+    
+    panel_width = max_width + 100
+    panel_height = 100 + len(replay_files) * 40
+    panel_x = (screen.get_width() - panel_width) // 2
+    panel_y = (screen.get_height() - panel_height) // 2
+    
+    # 主循环
+    while running:
+        screen.fill(BACKGROUND)
+        
+        # 绘制面板背景
+        panel = pygame.Surface((panel_width, panel_height), pygame.SRCALPHA)
+        panel.fill((*PANEL_COLOR[:3], UI_PANEL_ALPHA))
+        pygame.draw.rect(panel, (100, 150, 200), panel.get_rect(), 2)
+        screen.blit(panel, (panel_x, panel_y))
+        
+        # 绘制标题
+        title = title_font.render("选择回放文件", True, TEXT_COLOR)
+        title_pos = (panel_x + (panel_width - title.get_width()) // 2, panel_y + 20)
+        screen.blit(title, title_pos)
+        
+        # 绘制文件列表
+        y_pos = panel_y + 70
+        for i, file in enumerate(replay_files):
+            color = (255, 255, 255) if i == selected_index else (180, 180, 180)
+            file_text = item_font.render(file, True, color)
+            screen.blit(file_text, (panel_x + 30, y_pos))
+            y_pos += 40
+        
+        # 绘制说明
+        help_font = data.get_font(data.get_scaled_font(18, screen))
+        help_text = help_font.render("↑/↓: 选择文件  ENTER: 确认  ESC: 取消", True, TEXT_COLOR)
+        help_pos = (panel_x + (panel_width - help_text.get_width()) // 2, panel_y + panel_height - 30)
+        screen.blit(help_text, help_pos)
+        
+        pygame.display.flip()
+        
+        # 处理事件
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+            elif event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_ESCAPE:
+                    return None  # 用户取消
+                elif event.key == pygame.K_RETURN:
+                    return selected_index  # 确认选择
+                elif event.key == pygame.K_UP:
+                    selected_index = max(0, selected_index - 1)
+                elif event.key == pygame.K_DOWN:
+                    selected_index = min(len(replay_files) - 1, selected_index + 1)
+        
+        clock.tick(60)
+    
+    return selected_index
+
+def no_replay_message(screen):
+    """
+    显示无回放文件提示
+    
+    参数:
+    - screen: 游戏屏幕对象
+    """
+    clock = pygame.time.Clock()
+    running = True
+    
+    # 创建字体
+    font = pygame.font.SysFont("simhei", 36)
+    text = font.render("没有找到回放文件！按ESC返回主菜单", True, (255, 0, 0))
+    text_rect = text.get_rect(center=(screen.get_width()//2, screen.get_height()//2))
+    
+    while running:
+        screen.fill(BACKGROUND)
+        screen.blit(text, text_rect)
+        pygame.display.flip()
+        
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+            elif event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_ESCAPE:
+                    running = False
+
+def handle_replay_events(replayer):
+    """
+    处理回放事件
+    
+    参数:
+    - replayer: 回放器对象
+    
+    返回:
+    - bool: 是否继续回放
+    """
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            pygame.quit()
+            sys.exit()
+            return False
+        elif event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_ESCAPE:
+                return False  # 退出回放模式
+            # 播放控制
+            elif event.key == pygame.K_SPACE:
+                # 暂停/播放
+                if replayer.state == ReplayState.PAUSED:
+                    replayer.state = ReplayState.PLAYING
+                else:
+                    replayer.state = ReplayState.PAUSED
+            elif event.key == pygame.K_RIGHT:
+                # 快进
+                replayer.state = ReplayState.FAST_FORWARD
+            elif event.key == pygame.K_LEFT:
+                # 倒退
+                replayer.state = ReplayState.REWIND
+            elif event.key == pygame.K_UP:
+                # 增加速度
+                replayer.playback_speed = min(4.0, replayer.playback_speed + 0.5)
+            elif event.key == pygame.K_DOWN:
+                # 减少速度
+                replayer.playback_speed = max(0.5, replayer.playback_speed - 0.5)
+            elif event.key == pygame.K_j:
+                # 跳转到指定时间（示例：跳转到中间）
+                replayer.current_time = replayer.total_time / 2
+                replayer.reset_indices()  # 重置索引
+    return True
+
+def render_replay_scene(screen, background_grid, replayer):
+    """
+    渲染回放场景
+    
+    参数:
+    - screen: 游戏屏幕对象
+    - background_grid: 背景网格表面
+    - replayer: 回放器对象
+    """
+    # 绘制背景网格
+    screen.blit(background_grid, (0, 0))
+    
+    # 绘制玩家
+    pygame.draw.rect(screen, (0, 255, 0), replayer.player.rect)
+    
+    # 绘制特效
+    replayer.draw_effects(screen)
+    
+    # 绘制UI
+    replayer.draw_ui(screen)
+    replayer.draw_progress_bar(screen)

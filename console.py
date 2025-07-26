@@ -1,15 +1,22 @@
 """
-控制台系统模块
+控制台系统模块 (修改版)
 提供游戏内控制台功能，支持命令输入、历史记录、自动补全和执行
 包含三个核心类：ConsoleState, ConsoleCore, ConsoleUI, Console
+修改内容：
+1. 输入框移动到控制台顶部
+2. 输出区域在输入框下方
+3. 最新输出靠近顶部输入框
 """
 
 import pygame
 import re
 import time
 import data
+import glob
+import os
 from enum import Enum
 from data import scale_value, get_scaled_font, get_font
+from item import AdrenalineItem  # 导入肾上腺素物品
 
 class ConsoleState(Enum):
     """
@@ -32,22 +39,16 @@ class ConsoleCore:
     1. 管理命令注册和执行
     2. 处理输入历史和自动补全
     3. 管理控制台输出内容
-    
-    属性说明:
-    - input_text: 当前输入的命令文本
-    - history: 历史命令记录列表
-    - history_index: 当前浏览的历史命令索引(-1表示不在历史记录中)
-    - output_lines: 控制台输出行列表
-    - max_output_lines: 控制台最大显示行数
-    - commands: 注册的命令字典 {命令名: {function: 执行函数, description: 描述}}
     """
+    
     def __init__(self):
+        """初始化控制台核心"""
         self.input_text = ""  # 当前输入的命令文本
         self.history = []  # 历史命令记录列表
-        self.history_index = -1  # 当前浏览的历史命令索引(-1表示不在历史记录中)
+        self.history_index = -1  # 当前浏览的历史命令索引
         self.output_lines = []  # 控制台输出行列表
-        self.max_output_lines = 20  # 控制台最大显示行数
-        self.commands = {}  # 注册的命令字典 {命令名: {function: 执行函数, description: 描述}}
+        self.max_output_lines = data.Max_Output_Lines  # 控制台最大显示行数
+        self.commands = {}  # 注册的命令字典
         self._register_default_commands()  # 注册默认命令
     
     def _register_default_commands(self):
@@ -63,7 +64,8 @@ class ConsoleCore:
         self.register_command("show", self._cmd_show, "显示/隐藏检测面板")
         self.register_command("version", self._cmd_version, "显示游戏版本信息")
         self.register_command("debug", self._cmd_debug, "切换调试模式")
-        self.register_command("give", self._cmd_give, "给予玩家物品（此功能已禁用）")
+        self.register_command("give", self._cmd_give, "给予玩家物品")  # 重新启用give命令
+        self.register_command("replay", self._cmd_replay, "强制读取并播放指定的回放文件")  # 添加replay命令
     
     def register_command(self, name, function, description=""):
         """
@@ -71,18 +73,14 @@ class ConsoleCore:
         
         参数:
         - name: 命令名称(不区分大小写)
-        - function: 命令执行函数(接收args和game两个参数)
-        - description: 命令描述文本(可选)
+        - function: 命令执行函数
+        - description: 命令描述文本
         """
         self.commands[name.lower()] = {"function": function, "description": description}
     
     def add_output(self, text):
         """
         添加输出到控制台
-        
-        功能:
-        1. 自动分割过长的文本行
-        2. 限制最大显示行数
         
         参数:
         - text: 要添加的输出文本
@@ -146,7 +144,7 @@ class ConsoleCore:
         执行当前输入的命令
         
         参数:
-        - game: 游戏实例(可选)
+        - game: 游戏实例
         """
         cmd_text = self.input_text.strip()
         if not cmd_text: return
@@ -276,35 +274,102 @@ class ConsoleCore:
             self.add_output("此游戏实例不支持调试模式")
     
     def _cmd_give(self, args, game=None):
-        """给予玩家物品命令(已禁用)"""
-        self.add_output("错误: 此功能已被禁用")
+        """给予玩家物品命令"""
+        if not game or not hasattr(game, 'player'):
+            self.add_output("错误: 未连接到游戏实例")
+            return
+            
+        if not args:
+            self.add_output("用法: give [物品名]")
+            self.add_output("可用物品: adrenaline (肾上腺素)")
+            return
+            
+        item_name = args[0].lower()
+        if item_name == "adrenaline":
+            # 创建肾上腺素物品
+            adrenaline = AdrenalineItem()
+            # 使用物品
+            if adrenaline.use(game.player):
+                self.add_output("成功给予并使用肾上腺素!")
+            else:
+                self.add_output("无法使用肾上腺素（可能在冷却中）")
+        else:
+            self.add_output(f"未知物品: {item_name}")
+
+    def _cmd_replay(self, args, game=None):
+        """
+        强制读取并播放指定的回放文件命令
+        
+        参数:
+        - args: 命令参数列表
+        - game: 游戏实例
+        """
+        if not game or not hasattr(game, 'force_replay'):
+            self.add_output("错误: 未连接到游戏实例或游戏不支持强制回放功能")
+            return
+            
+        if not args:
+            # 如果没有提供文件名，列出所有可用回放文件
+            replay_files = glob.glob("*.dem")
+            if not replay_files:
+                self.add_output("没有找到回放文件")
+                return
+                
+            self.add_output("可用回放文件:")
+            for i, file in enumerate(replay_files):
+                self.add_output(f"  {i+1}. {file}")
+            self.add_output("使用: replay [文件名 或 编号]")
+            return
+            
+        # 尝试将参数解释为索引或文件名
+        replay_files = glob.glob("*.dem")
+        file_arg = args[0].strip()
+        
+        # 检查是否是数字索引
+        if file_arg.isdigit():
+            index = int(file_arg) - 1
+            if 0 <= index < len(replay_files):
+                filename = replay_files[index]
+            else:
+                self.add_output(f"错误: 无效的索引 {file_arg}，可用索引范围 1-{len(replay_files)}")
+                return
+        else:
+            # 直接使用文件名
+            filename = file_arg
+            # 确保文件扩展名正确
+            if not filename.endswith(".dem"):
+                filename += ".dem"
+            
+            # 检查文件是否存在
+            if not os.path.exists(filename):
+                self.add_output(f"错误: 文件 '{filename}' 不存在")
+                return
+        
+        # 调用游戏实例的强制回放方法
+        try:
+            game.force_replay(filename)
+            self.add_output(f"正在强制播放回放文件: {filename}")
+            self.add_output("关闭控制台后回放将开始...")
+        except Exception as e:
+            self.add_output(f"播放回放失败: {str(e)}")
 
 class ConsoleUI:
     """
-    控制台UI渲染类
+    控制台UI渲染类 (修改版)
     
     功能概述:
     1. 渲染控制台界面元素
     2. 管理滚动条和光标
     3. 处理屏幕适配
-    
-    属性说明:
-    - console_height: 控制台默认高度(像素)
-    - scroll_offset: 当前滚动偏移量(行)
-    - scroll_bar_height: 滚动条高度
-    - scroll_bar_y: 滚动条Y位置
-    - scroll_bar_dragging: 是否正在拖动滚动条
-    - scroll_bar_drag_offset: 拖动偏移量
-    - cursor_visible: 光标可见状态
-    - cursor_timer: 光标闪烁计时器
-    - overlay: 半透明覆盖层表面
-    - console_bg: 控制台背景表面
-    - font: 控制台字体
-    - last_surface_create_time: 上次创建表面的时间
-    - scroll_bar_rect: 滚动条矩形区域
+    修改内容：
+    - 输入框移动到控制台顶部
+    - 输出区域在输入框下方
+    - 最新输出靠近顶部输入框
     """
+    
     def __init__(self):
-        self.console_height = 250  # 控制台默认高度
+        """初始化控制台UI"""
+        self.console_height = data.CONSOLE_HEIGHT  # 控制台默认高度
         self.scroll_offset = 0  # 当前滚动偏移量
         self.scroll_bar_height = 0  # 滚动条高度
         self.scroll_bar_y = 0  # 滚动条Y位置
@@ -349,13 +414,10 @@ class ConsoleUI:
     
     def render(self, screen, core, state, input_text):
         """
-        渲染控制台UI
-        
-        参数:
-        - screen: 游戏主屏幕表面
-        - core: ConsoleCore实例
-        - state: 控制台状态(ConsoleState)
-        - input_text: 当前输入文本
+        渲染控制台UI (修改版)
+        - 输入框在顶部
+        - 输出区域在输入框下方
+        - 最新输出靠近顶部输入框
         """
         if state == ConsoleState.CLOSED or screen is None: return
         
@@ -382,30 +444,11 @@ class ConsoleUI:
         screen.blit(self.overlay, (0, 0))
         screen.blit(self.console_bg, (0, 0))
         
-        # 渲染输出区域
-        output_area_height = scaled_console_height - scaled_60
-        visible_lines = min(core.max_output_lines, int(output_area_height // scaled_20))
-        total_lines = len(core.output_lines)
-        max_scroll = max(0, total_lines - visible_lines)
-        if self.scroll_offset > max_scroll:
-            self.scroll_offset = max_scroll
-        
-        y_pos = scaled_10
-        start_index = self.scroll_offset
-        end_index = min(start_index + visible_lines, total_lines)
-        
-        # 渲染输出文本
-        for i in range(start_index, end_index):
-            if i < len(core.output_lines):
-                line = core.output_lines[i]
-                text_surface = self.font.render(line, True, (200, 220, 255))
-                screen.blit(text_surface, (scaled_10, y_pos))
-                y_pos += scaled_20
-        
-        # 渲染输入区域
-        input_y = scaled_console_height - scaled_50
+        # ===== 输入框区域在顶部 =====
+        input_y = scaled_10
+        # 绘制输入框分割线
         pygame.draw.line(screen, (100, 150, 200), 
-                        (0, input_y), (screen.get_width(), input_y), 2)
+                        (0, input_y + scaled_40), (screen.get_width(), input_y + scaled_40), 2)
         
         # 渲染输入文本和光标
         input_text = f"> {input_text}"
@@ -413,6 +456,30 @@ class ConsoleUI:
             input_text += "_"
         input_surface = self.font.render(input_text, True, (255, 255, 200))
         screen.blit(input_surface, (scaled_10, input_y + scaled_5))
+        
+        # ===== 输出区域在输入框下方 =====
+        output_area_y = input_y + scaled_50  # 输出区域从输入框下方开始
+        output_area_height = scaled_console_height - scaled_60 - scaled_50
+        
+        # 计算可见行数和滚动位置
+        visible_lines = min(core.max_output_lines, int(output_area_height // scaled_20))
+        total_lines = len(core.output_lines)
+        max_scroll = max(0, total_lines - visible_lines)
+        if self.scroll_offset > max_scroll:
+            self.scroll_offset = max_scroll
+        
+        # 计算输出区域起始索引
+        start_index = max(0, total_lines - visible_lines - self.scroll_offset)
+        end_index = min(total_lines, start_index + visible_lines)
+        
+        # ===== 渲染输出文本 (最新输出靠近顶部) =====
+        y_pos = output_area_y
+        for i in range(start_index, end_index):
+            if i < len(core.output_lines):
+                line = core.output_lines[i]
+                text_surface = self.font.render(line, True, (200, 220, 255))
+                screen.blit(text_surface, (scaled_10, y_pos))
+                y_pos += scaled_20
 
 class Console:
     """
@@ -422,14 +489,10 @@ class Console:
     1. 管理控制台状态
     2. 处理用户输入事件
     3. 协调核心逻辑和UI渲染
-    
-    属性说明:
-    - state: 当前控制台状态(ConsoleState)
-    - core: ConsoleCore实例
-    - ui: ConsoleUI实例
-    - game: 关联的游戏实例(可选)
     """
+    
     def __init__(self, game_instance=None):
+        """初始化控制台"""
         self.state = ConsoleState.CLOSED  # 初始状态为关闭
         self.core = ConsoleCore()  # 控制台核心逻辑
         self.ui = ConsoleUI()  # 控制台UI渲染

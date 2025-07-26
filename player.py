@@ -16,33 +16,44 @@ class Player:
     2. 实现基于物理的移动系统
     3. 处理屏幕边界碰撞
     4. 渲染玩家图形
-    
-    属性说明:
-    - position: 玩家位置[x, y]
-    - velocity: 玩家速度[x, y]
-    - sprinting: 是否正在冲刺
-    - grounded: 是否在地面上
-    - image: 玩家图像表面
-    - rect: 玩家碰撞矩形
-    - render_position: 用于平滑渲染的位置(与真实位置有延迟)
     """
 
     def __init__(self):
         """初始化玩家对象"""
+        self._init_position()
+        self._init_velocity()
+        self._init_states()
+        self._init_graphics()
+    
+    def _init_position(self):
+        """初始化位置属性"""
         # 初始位置在屏幕中央
         self.position = [data.SCREEN_WIDTH / 2.0, data.SCREEN_HEIGHT / 2.0]
+        # 用于平滑渲染的位置
+        self.render_position = self.position.copy()
+    
+    def _init_velocity(self):
+        """初始化速度属性"""
         self.velocity = [0.0, 0.0]  # 初始速度为0
+    
+    def _init_states(self):
+        """初始化状态属性"""
         self.sprinting = False  # 冲刺状态
-        self.grounded = True  # 是否在地面上(本游戏中始终为True)
+        self.grounded = True  # 是否在地面上
         
+        # 肾上腺素相关属性
+        self.adrenaline_active = False  # 是否激活
+        self.adrenaline_active_end = 0.0  # 激活结束时间
+        self.adrenaline_cooldown_end = 0.0  # 冷却结束时间
+        self.speed_multiplier = 1.0  # 速度倍率
+    
+    def _init_graphics(self):
+        """初始化图形属性"""
         # 加载玩家图像
         self.image = data.load_player_image()
         # 创建碰撞矩形
         self.rect = pygame.Rect(0, 0, 80, 80)
         self.rect.center = (int(self.position[0]), int(self.position[1]))
-        
-        # 用于平滑渲染的位置
-        self.render_position = self.position.copy()
 
     def update(self, pressed_keys, delta_time):
         """
@@ -51,18 +62,29 @@ class Player:
         参数:
         - pressed_keys: 当前按下的按键状态
         - delta_time: 距离上一帧的时间
-        
-        说明:
-        1. 检测冲刺状态
-        2. 根据按键计算移动方向
-        3. 应用加速度和摩擦力
-        4. 更新位置和渲染位置
         """
+        self._update_adrenaline_state()
+        self._update_movement(pressed_keys, delta_time)
+        self._update_position(delta_time)
+        self.check_bounds()
+    
+    def _update_adrenaline_state(self):
+        """更新肾上腺素状态"""
+        current_time = pygame.time.get_ticks() / 1000.0
+        
+        # 检查肾上腺素激活状态是否结束
+        if self.adrenaline_active and current_time >= self.adrenaline_active_end:
+            self.adrenaline_active = False
+            self.speed_multiplier = 1.0
+    
+    def _update_movement(self, pressed_keys, delta_time):
+        """更新移动状态"""
         # 检测是否按下Shift键(冲刺)
         self.sprinting = pressed_keys[pygame.K_LSHIFT] or pressed_keys[pygame.K_RSHIFT]
         
-        # 计算最大速度(冲刺时使用冲刺速度)
-        max_speed = data.SPRINT_SPEED if self.sprinting else data.WALK_SPEED
+        # 计算最大速度(冲刺时使用冲刺速度，并考虑肾上腺素倍率)
+        base_speed = data.SPRINT_SPEED if self.sprinting else data.WALK_SPEED
+        max_speed = base_speed * self.speed_multiplier
         
         # 计算期望移动方向
         wish_dir = [0.0, 0.0]
@@ -103,7 +125,9 @@ class Player:
         else:
             # 速度过小时重置为0
             self.velocity = [0.0, 0.0]
-        
+    
+    def _update_position(self, delta_time):
+        """更新位置"""
         # 根据速度更新位置
         self.position[0] += self.velocity[0] * delta_time
         self.position[1] += self.velocity[1] * delta_time
@@ -120,20 +144,12 @@ class Player:
         
         参数:
         - ground_y: 地面Y坐标
-        
-        说明:
-        本游戏中始终返回True，预留用于后续扩展
         """
-        self.grounded = True
+        self.grounded = True  # 本游戏中始终为True
     
     def check_bounds(self):
         """
         检查边界碰撞，防止玩家移出屏幕
-        
-        说明:
-        1. 计算玩家图像尺寸
-        2. 限制玩家位置在屏幕范围内
-        3. 更新碰撞矩形位置
         """
         # 获取玩家图像尺寸
         img_width, img_height = self.image.get_size()
@@ -152,9 +168,6 @@ class Player:
         
         参数:
         - screen: 游戏屏幕表面
-        
-        说明:
-        使用render_position而不是真实位置，实现平滑的移动效果
         """
         # 计算图像位置(基于渲染位置)
         img_rect = self.image.get_rect(
@@ -163,3 +176,26 @@ class Player:
         )
         # 渲染玩家图像
         screen.blit(self.image, img_rect)
+    
+    def activate_adrenaline(self, duration, cooldown, speed_multiplier):
+        """
+        激活肾上腺素效果
+        
+        参数:
+        - duration: 持续时间
+        - cooldown: 冷却时间
+        - speed_multiplier: 速度倍率
+        """
+        current_time = pygame.time.get_ticks() / 1000.0
+        
+        # 检查是否在冷却时间内
+        if current_time < self.adrenaline_cooldown_end:
+            return False
+            
+        # 激活肾上腺素效果
+        self.adrenaline_active = True
+        self.adrenaline_active_end = current_time + duration
+        self.adrenaline_cooldown_end = current_time + cooldown
+        self.speed_multiplier = speed_multiplier
+        
+        return True

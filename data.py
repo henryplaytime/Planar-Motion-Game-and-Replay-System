@@ -71,6 +71,10 @@ DECELERATION = 15.0  # 减速度(像素/秒²)
 AIR_ACCELERATION = 10.0  # 空中加速度(像素/秒²)
 FRICTION = 5.0  # 摩擦力系数
 
+# === 控制台参数 ===
+CONSOLE_HEIGHT = 500  # 控制台默认高度
+Max_Output_Lines = 20  # 控制台最大输出行数
+
 # === 监控的键位 ===
 KEYS_TO_MONITOR = {
     pygame.K_d: "D键",  # 右移键

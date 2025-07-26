@@ -9,8 +9,15 @@ import data
 import os
 import sys
 import time
+import json
 import console
 from player import Player
+from enum import Enum
+
+class GameState(Enum):
+    """游戏状态枚举"""
+    NORMAL = 0  # 正常游戏状态
+    REPLAY = 1  # 回放状态
 
 class Game:
     """
@@ -22,51 +29,85 @@ class Game:
     3. 更新游戏状态
     4. 渲染游戏画面
     5. 管理录制系统
-    
-    属性说明:
-    - running: 游戏是否正在运行
-    - screen: Pygame屏幕对象
-    - player: 玩家对象
-    - clock: 游戏时钟
-    - show_detection: 是否显示检测面板
-    - last_time: 上一帧时间
-    - ground_y: 地面位置Y坐标
-    - console: 控制台对象
-    - recording: 是否正在录制
-    - record_file: 录制文件对象
-    - record_start_time: 录制开始时间
-    - last_record_time: 上次记录时间
-    - snapshot_interval: 快照间隔时间
-    - last_snapshot_time: 上次快照时间
-    - record_interval: 记录间隔时间(基于帧率)
-    - last_key_states: 按键状态缓存
-    - background_grid: 背景网格表面
-    - control_info_texts: 控制信息文本列表
-    - move_info_texts: 移动信息文本列表
     """
     
     def __init__(self, screen):
         """初始化游戏对象"""
-        self.running = True  # 游戏运行状态
         self.screen = screen  # Pygame屏幕对象
-        self.player = Player()  # 玩家对象
         self.clock = pygame.time.Clock()  # 游戏时钟
-        self.show_detection = False  # 是否显示检测面板
-        self.last_time = pygame.time.get_ticks() / 1000.0  # 上一帧时间
-        self.ground_y = data.SCREEN_HEIGHT - 100  # 地面位置Y坐标
         self.console = console.Console(self)  # 控制台对象
-        self.recording = False  # 是否正在录制
-        self.record_file = None  # 录制文件对象
-        self.record_start_time = 0  # 录制开始时间
-        self.last_record_time = 0  # 上次记录时间
-        self.snapshot_interval = 0.2  # 快照间隔时间
-        self.last_snapshot_time = 0  # 上次快照时间
-        self.record_interval = 1.0 / data.RECORD_FPS  # 记录间隔时间(基于帧率)
+
+        self.record_interval = 1.0 / data.RECORD_FPS  # 录制间隔时间
+        
+        # 初始化游戏状态
+        self.running = True
+        self.show_detection = False
+        self.recording = False
+        self.game_state = GameState.NORMAL  # 添加游戏状态
+        
+        # 初始化游戏对象
+        self.player = Player()
+        self._init_time_variables()
+        self._init_recording()
+        
+        # 初始化UI元素
+        self.ground_y = data.SCREEN_HEIGHT - 100
+        self.create_background_grid()
+        self.create_ui_elements()
+        
+        # 加载肾上腺素配置
+        self.adrenaline_config = self.load_adrenaline_config()
+        self.last_q_pressed = False
+    
+    def _init_time_variables(self):
+        """初始化时间相关变量"""
+        self.last_time = pygame.time.get_ticks() / 1000.0
+        self.record_start_time = 0
+        self.last_record_time = 0
+        self.last_snapshot_time = 0
+    
+    def _init_recording(self):
+        """初始化录制状态"""
+        self.record_file = None
         self.last_key_states = {  # 按键状态缓存
             'w': False, 'a': False, 's': False, 'd': False, 'shift': False
         }
-        self.create_background_grid()  # 创建背景网格
-        self.create_ui_elements()  # 创建UI元素
+    
+    def load_adrenaline_config(self):
+        """
+        从item.json加载肾上腺素配置
+        
+        返回:
+        - dict: 包含速度倍率、持续时间和冷却时间的字典
+        """
+        try:
+            # 构建配置文件路径 - 指向config文件夹
+            config_path = os.path.join(
+                os.path.dirname(__file__), 
+                "config", 
+                "item.json"
+            )
+            with open(config_path, 'r', encoding='utf-8') as f:
+                config_data = json.load(f)
+            
+            # 获取肾上腺素配置
+            item_config = config_data["items"].get("adrenaline", {})
+            effects = item_config.get("effects", {})
+            
+            # 添加默认值以防配置缺失
+            return {
+                "speed_multiplier": effects.get("speed_multiplier", 1.5),
+                "duration": effects.get("duration", 5.0),
+                "cooldown": effects.get("cooldown", 15.0)
+            }
+        except Exception as e:
+            print(f"加载肾上腺素配置失败: {str(e)}")
+            # 返回默认配置
+            return {
+                "speed_multiplier": 1.5,
+                "duration": 5.0,
+                "cooldown": 15.0
+            }
     
     def create_background_grid(self):
         """创建背景网格表面"""
@@ -90,6 +131,7 @@ class Game:
         self.control_info_texts = [  # 控制信息文本
             "WASD键: 移动玩家",
             "Shift键: 奔跑加速",
+            "Q键: 使用肾上腺素",
             "F1键: 显示/隐藏键盘状态",
             "F2键: 开启/关闭录制",
             "ESC键: 退出游戏"
@@ -98,8 +140,23 @@ class Game:
             "移动系统: 平滑加速物理",
             "按下方向键加速",
             "松开方向键逐渐减速",
-            "Shift键增加最大速度"
+            "Shift键增加最大速度",
+            "Q键使用肾上腺素提升速度"
         ]
+    
+    def run(self):
+        """运行游戏主循环"""
+        while self.running:
+            self.handle_events()  # 处理事件
+            pressed_keys, delta_time = self.update()  # 更新状态
+            self.update_console()  # 更新控制台
+            self.render(pressed_keys, delta_time)  # 渲染画面
+            self.clock.tick(60)  # 限制帧率
+    
+    def update_console(self):
+        """更新控制台状态"""
+        if self.console:
+            self.console.update()
     
     def handle_events(self):
         """处理游戏事件"""
@@ -252,15 +309,33 @@ class Game:
         
         pressed_keys = pygame.key.get_pressed()  # 获取按键状态
         
+        # 处理肾上腺素激活
+        self._handle_adrenaline_activation(pressed_keys, current_time)
+        
         # 更新玩家状态
         self.player.update(pressed_keys, delta_time)
         self.player.check_ground(self.ground_y)
-        self.player.check_bounds()
         
         # 记录当前帧
         self.record_frame(self.player, pressed_keys)
         
         return pressed_keys, delta_time
+    
+    def _handle_adrenaline_activation(self, pressed_keys, current_time):
+        """处理肾上腺素激活逻辑"""
+        if pressed_keys[pygame.K_q] and not self.last_q_pressed:
+            # 检查是否在冷却时间内
+            if current_time >= self.player.adrenaline_cooldown_end:
+                # 激活肾上腺素效果
+                success = self.player.activate_adrenaline(
+                    self.adrenaline_config["duration"],
+                    self.adrenaline_config["cooldown"],
+                    self.adrenaline_config["speed_multiplier"]
+                )
+                if success:
+                    print("肾上腺素激活!")
+        
+        self.last_q_pressed = pressed_keys[pygame.K_q]
     
     def render(self, pressed_keys, delta_time):
         """渲染游戏画面"""
@@ -275,14 +350,7 @@ class Game:
         
         # 如果正在录制，显示录制状态
         if self.recording:
-            rec_text = data.get_font(data.get_scaled_font(24, self.screen)).render(
-                "录制中...", True, (255, 50, 50))
-            rec_pos = data.scale_position(
-                data.SCREEN_WIDTH - rec_text.get_width() - 20, 
-                20, 
-                self.screen
-            )
-            self.screen.blit(rec_text, rec_pos)
+            self.draw_recording_indicator()
         
         # 根据设置渲染检测面板或控制信息
         if self.show_detection:
@@ -296,6 +364,17 @@ class Game:
         
         # 更新显示
         pygame.display.flip()
+    
+    def draw_recording_indicator(self):
+        """渲染录制状态指示器"""
+        rec_text = data.get_font(data.get_scaled_font(24, self.screen)).render(
+            "录制中...", True, (255, 50, 50))
+        rec_pos = data.scale_position(
+            data.SCREEN_WIDTH - rec_text.get_width() - 20, 
+            20, 
+            self.screen
+        )
+        self.screen.blit(rec_text, rec_pos)
     
     def draw_player_status(self):
         """渲染玩家状态信息"""
@@ -337,6 +416,14 @@ class Game:
             (150, 255, 150) if self.player.grounded else (255, 150, 150))
         ground_pos = data.scale_position(10, data.SCREEN_HEIGHT - 90, self.screen)
         self.screen.blit(ground_text, ground_pos)
+        
+        # 渲染肾上腺素状态
+        if self.player.adrenaline_active:
+            adrenaline_text = data.get_font(data.get_scaled_font(20, self.screen)).render(
+                "肾上腺素激活中!", True, (255, 50, 50))
+            adrenaline_pos = data.scale_position(
+                10, data.SCREEN_HEIGHT - 120, self.screen)
+            self.screen.blit(adrenaline_text, adrenaline_pos)
     
     def draw_control_info(self, pressed_keys):
         """渲染控制信息面板"""
@@ -365,6 +452,11 @@ class Game:
         rec_status = "开启" if self.recording else "关闭"
         rec_color = (255, 50, 50) if self.recording else (100, 200, 100)
         items.append((f"录制状态: {rec_status}", rec_color))
+        
+        # 肾上腺素状态
+        adrenaline_status = "激活中" if self.player.adrenaline_active else "可用"
+        adrenaline_color = (255, 50, 50) if self.player.adrenaline_active else (100, 200, 100)
+        items.append((f"肾上腺素: {adrenaline_status}", adrenaline_color))
         
         # 计算面板尺寸
         max_width = 0
@@ -430,6 +522,21 @@ class Game:
         rec_color = (255, 50, 50) if self.recording else (200, 200, 200)
         items.append((f"录制状态: {rec_status}", rec_color))
         
+        # 添加肾上腺素状态项
+        adrenaline_status = "激活中" if self.player.adrenaline_active else "可用"
+        adrenaline_color = (255, 50, 50) if self.player.adrenaline_active else (100, 200, 100)
+        items.append((f"肾上腺素: {adrenaline_status}", adrenaline_color))
+        
+        # 如果激活中，显示剩余时间
+        if self.player.adrenaline_active:
+            remaining = self.player.adrenaline_active_end - (pygame.time.get_ticks() / 1000.0)
+            items.append((f"剩余时间: {remaining:.1f}秒", (255, 200, 0)))
+        
+        # 如果在冷却中，显示冷却时间
+        elif (pygame.time.get_ticks() / 1000.0) < self.player.adrenaline_cooldown_end:
+            cooldown = self.player.adrenaline_cooldown_end - (pygame.time.get_ticks() / 1000.0)
+            items.append((f"冷却时间: {cooldown:.1f}秒", (200, 200, 200)))
+        
         # 添加游戏信息项
         info_texts = [
             f"当前速度: {data.calculate_speed(self.player.velocity):.1f} 像素/秒",
@@ -472,14 +579,8 @@ class Game:
             text_surface = font.render(text, True, color)
             self.screen.blit(text_surface, (panel_pos[0] + data.UI_PADDING, y_pos))
             y_pos += data.UI_LINE_SPACING
-
-    def run(self):
-        """运行游戏主循环"""
-        self.running = True
-        while self.running:
-            self.handle_events()  # 处理事件
-            pressed_keys, delta_time = self.update()  # 更新状态
-            if self.console:
-                self.console.update()  # 更新控制台
-            self.render(pressed_keys, delta_time)  # 渲染画面
-            self.clock.tick(60)  # 限制帧率
+    
+    def force_replay(self, filename):
+        """强制启动回放模式"""
+        self.replay_file = filename
+        self.game_state = GameState.REPLAY  # 使用枚举值
