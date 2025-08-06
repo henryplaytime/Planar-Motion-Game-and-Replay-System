@@ -192,7 +192,7 @@ class Player:
         if current_time < self.adrenaline_cooldown_end:
             return False
             
-        # 激活肾上腺素效果
+        # 激活肾上腺素效果.
         self.adrenaline_active = True
         self.adrenaline_active_end = current_time + duration
         self.adrenaline_cooldown_end = current_time + cooldown

@@ -1,5 +1,4 @@
-
-# 平面移动游戏与回放系统 (版本0.2.4)
+# 平面移动游戏与回放系统 (版本0.2.3)
 
 ## 项目名称
 
@@ -12,36 +11,13 @@
 * **平滑物理移动**：基于加速度和摩擦力的物理模型
 * **游戏状态录制**：以64ticks频率记录玩家位置、速度和状态
 * **灵活回放系统**：支持暂停、快进、后退、变速
-* **模块化架构**：清晰分离游戏逻辑、物理计算和UI渲染
+* **模块化架构**：分离游戏逻辑、物理计算和UI渲染
 * **交互式控制台**：实时执行命令和调试游戏
 * **肾上腺素系统**：短时提升移动速度的特殊能力
-* **UI系统**：COD风格按钮与动画反馈
-* **音效反馈系统**：悬停/点击音效集成
 
 ---
 
 ## 版本历史更新
-
-### v0.2.4 (2025-08-06) - UI系统升级与性能优化
-
-* **新UI系统**：
-  * 新增COD风格按钮交互系统
-  * 两种可切换按钮风格（COD风格/默认风格）
-  * 按钮悬停/点击动画反馈
-* **音效系统升级**：
-  * 新增悬停、点击、切换三种音效
-  * 悬停和点击音效应用到所有按钮
-* **设置界面增强**：
-  * 新增按钮风格切换功能
-  * 新增设置按钮和界面
-* **文件结构调整**：
-  * 新增source文件夹
-  * 新增menu_btn_style.py按钮样式库
-* **代码优化**：
-  * 优化main.py、console.py、data.py等核心模块
-* **功能性调整**：
-  * 移除1、2、3键快捷操作，改用鼠标操作
-  * 保留ESC按键退出、~(`)按键切换控制台
 
 ### v0.2.3 (2025-07-26) - 肾上腺素系统与控制台增强
 
@@ -108,13 +84,6 @@ CONSOLE_HEIGHT = 400  # 控制台默认高度
 BACKGROUND = (30, 30, 50)  # 背景色
 TEXT_COLOR = (220, 220, 255)  # 文本颜色
 ADRENALINE_COLOR = (255, 50, 50, 180)  # 肾上腺素效果色
-
-# 使命召唤风格UI颜色
-BUTTON_IDLE = (30, 40, 50)  # 深灰蓝色
-BUTTON_HOVER = (50, 70, 90)  # 浅灰蓝色
-BUTTON_ACTIVE = (180, 150, 20)  # COD标志性琥珀色
-ACCENT_COLOR = (180, 150, 20)  # 琥珀色高亮
-GLOW_COLOR = (180, 150, 20, 100)  # 半透明琥珀色光晕
 ```
 
 ### 2. `player.py` - 玩家角色实现
@@ -241,7 +210,7 @@ def _activate_adrenaline_effect(self):
     self.adrenaline_particles = []
     for _ in range(20):
         self._create_adrenaline_particle()
-  
+    
 def _create_adrenaline_particle(self):
     """创建单个肾上腺素粒子"""
     angle = random.uniform(0, 2 * math.pi)
@@ -258,7 +227,7 @@ def _create_adrenaline_particle(self):
 
 ### 5. `console.py` - 控制台系统
 
-**replay命令实现**：
+**新增replay命令实现**：
 
 ```python
 def _cmd_replay(self, args, game=None):
@@ -272,20 +241,20 @@ def _cmd_replay(self, args, game=None):
     if not game or not hasattr(game, 'force_replay'):
         self.add_output("错误: 未连接到游戏实例或游戏不支持强制回放功能")
         return
-  
+    
     if not args:
         # 如果没有提供文件名，列出所有可用回放文件
         replay_files = glob.glob("*.dem")
         if not replay_files:
             self.add_output("没有找到回放文件")
             return
-      
+        
         self.add_output("可用回放文件:")
         for i, file in enumerate(replay_files):
             self.add_output(f"  {i+1}. {file}")
         self.add_output("使用: replay [文件名 或 编号]")
         return
-  
+    
     # 尝试将参数解释为索引或文件名
     replay_files = glob.glob("*.dem")
     file_arg = args[0].strip()
@@ -304,7 +273,7 @@ def _cmd_replay(self, args, game=None):
         # 确保文件扩展名正确
         if not filename.endswith(".dem"):
             filename += ".dem"
-  
+    
         # 检查文件是否存在
         if not os.path.exists(filename):
             self.add_output(f"错误: 文件 '{filename}' 不存在")
@@ -349,7 +318,7 @@ class AdrenalineItem(Item):
     def use(self, player):
         """
         使用肾上腺素物品
-  
+    
         返回:
         - bool: 使用是否成功
         """
@@ -358,132 +327,14 @@ class AdrenalineItem(Item):
         duration = effects.get("duration", 5.0)
         cooldown = effects.get("cooldown", 15.0)
         speed_multiplier = effects.get("speed_multiplier", 1.5)
-  
+    
         # 激活肾上腺素效果
         return player.activate_adrenaline(duration, cooldown, speed_multiplier)
 ```
 
 ### 7. `main.py` - 游戏入口
 
-**专业UI系统实现**：
-
-```python
-# 全局按钮样式设置
-BUTTON_STYLE = "COD"  # 默认使用COD风格
-
-class ButtonManager:
-    """管理按钮创建和样式的类"""
-    @staticmethod
-    def set_style(style):
-        global BUTTON_STYLE
-        BUTTON_STYLE = style
-  
-    @staticmethod
-    def get_style():
-        return BUTTON_STYLE
-  
-    @staticmethod
-    def create_button(x, y, width, height, text, screen):
-        return create_button(BUTTON_STYLE, x, y, width, height, text, screen)
-
-def create_menu_buttons(screen):
-    """创建主菜单按钮的函数"""
-    button_width = 300
-    button_height = 60
-    start_y = data.SCREEN_HEIGHT * 0.4
-  
-    return [
-        ButtonManager.create_button(data.SCREEN_WIDTH//2 - button_width//2, start_y, button_width, button_height, "开始游戏", screen),
-        ButtonManager.create_button(data.SCREEN_WIDTH//2 - button_width//2, start_y + 100, button_width, button_height, "回放游戏", screen),
-        ButtonManager.create_button(data.SCREEN_WIDTH//2 - button_width//2, start_y + 200, button_width, button_height, "设置", screen),
-        ButtonManager.create_button(data.SCREEN_WIDTH//2 - button_width//2, start_y + 300, button_width, button_height, "退出", screen)
-    ]
-```
-
-**设置菜单实现**：
-
-```python
-def settings_menu(screen, console):
-    """
-    设置菜单函数
-    允许用户调整游戏设置，如按钮样式
-    返回布尔值表示是否需要重新创建主菜单按钮
-    """
-    # 初始化
-    button_width = 300
-    button_height = 60
-    start_y = data.SCREEN_HEIGHT * 0.4
-
-    # 创建按钮文本
-    button_style_text = f"按钮样式: {'COD风格' if ButtonManager.get_style() == 'COD' else '默认'}"
-  
-    # 音频
-    try:
-        click_sound = pygame.mixer.Sound(data.SOUND_MENU_CLICK)
-        hover_sound = pygame.mixer.Sound(data.SOUND_MENU_HOVER)
-    except:
-        click_sound = None
-        hover_sound = None
-  
-    # 创建按钮
-    buttons = [
-        ButtonManager.create_button(data.SCREEN_WIDTH//2 - button_width//2, start_y, button_width, button_height, 
-                    button_style_text, screen),
-        ButtonManager.create_button(data.SCREEN_WIDTH//2 - button_width//2, start_y + 100, button_width, button_height, 
-                    "返回", screen)
-    ]
-  
-    # 当前选中的选项索引
-    current_selected = -1
-    last_hover_index = -1
-  
-    # 设置菜单循环
-    running = True
-    style_changed = False  # 记录按钮样式是否被更改
-```
-
-### 8. `source/menu_btn_style.py` - 按钮样式库
-
-**专业按钮系统实现**：
-
-```python
-class CODButton:
-    def __init__(self, x, y, width, height, text, screen):
-        # COD风格按钮初始化
-        self.rect = pygame.Rect(x, y, width, height)
-        self.base_rect = pygame.Rect(x, y, width, height)
-        self.current_rect = pygame.Rect(x, y, width, height)
-        self.text = text
-        self.state = "idle"
-        self.glow_alpha = 0
-        self.pulse_direction = 1
-        self.anim_progress = 0
-        self.anim_direction = 0
-        self.screen = screen
-  
-    def draw(self, surface):
-        # 绘制COD风格按钮
-        # ... [完整实现]
-
-class DefaultButton:
-    def __init__(self, x, y, width, height, text, screen):
-        # 默认风格按钮初始化
-        self.rect = pygame.Rect(x, y, width, height)
-        self.text = text
-        self.state = "idle"
-        self.screen = screen
-  
-    def draw(self, surface):
-        # 绘制默认风格按钮
-        # ... [完整实现]
-
-# 按钮工厂函数
-def create_button(style, x, y, width, height, text, screen):
-    if style == "COD":
-        return CODButton(x, y, width, height, text, screen)
-    else:
-        return DefaultButton(x, y, width, height, text, screen)
-```
+**无重大变更**
 
 ---
 
@@ -531,51 +382,15 @@ def create_button(style, x, y, width, height, text, screen):
 
 ---
 
-## 项目文件结构说明
-
-```
-平面移动游戏与回放系统/
-├── config/              # 配置文件
-│   └── item.json        # 肾上腺素物品参数
-├── sounds/              # 音效资源
-│   ├── UI_Sounds_Click.mp3
-│   ├── UI_Sounds_Switch.mp3
-│   └── UI_Sounds_Hover.mp3
-├── source/              # 源码组件
-│   └── menu_btn_style.py # 按钮样式库
-├── Adrenaline.png       # 物品图标
-├── console.py           # 控制台系统
-├── data.py              # 常量与工具
-├── game.py              # 游戏主逻辑
-├── main.py              # 程序入口
-├── player_image.png     # 玩家角色纹理
-├── player.py            # 玩家角色系统
-├── README.md            # 项目文档
-├── Replay_System.py     # 高级回放系统
-└── item.py              # 游戏物品系统
-```
-
-### 新增文件说明
-
-**source/menu_btn_style.py**：
-
-* 按钮样式库实现
-* 包含COD风格和默认风格两种按钮
-* 实现按钮工厂模式
-* 提供悬停/点击动画效果
-* 支持分辨率自适应
-
----
-
 ## 项目扩展建议
 
-1. **修改物理参数**：调整加速度、摩擦力等获得不同手感
+1. **添加跳跃功能**：扩展物理系统支持垂直移动
+2. **修改物理参数**：调整加速度、摩擦力等获得不同手感
 3. **添加游戏元素**：实现障碍物、收集物等游戏对象
-4. **扩展物品系统**：添加新物品类型（如药水）
+4. **扩展物品系统**：添加新物品类型（如生命药水）
 5. **网络功能扩展**：添加多人游戏支持
 6. **肾上腺素视觉增强**：添加屏幕特效和角色视觉效果
-7. **音效管理系统**：添加音效设置界面
-8. **更多UI风格**：增加额外的按钮风格选项
+7. **回放系统优化**：解决replay命令的兼容性问题
 
 ---
 

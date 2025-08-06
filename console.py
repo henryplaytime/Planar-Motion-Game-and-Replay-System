@@ -1,5 +1,5 @@
 """
-控制台系统模块 (修改版)
+控制台系统模块
 提供游戏内控制台功能，支持命令输入、历史记录、自动补全和执行
 包含三个核心类：ConsoleState, ConsoleCore, ConsoleUI, Console
 修改内容：
@@ -497,6 +497,11 @@ class Console:
         self.core = ConsoleCore()  # 控制台核心逻辑
         self.ui = ConsoleUI()  # 控制台UI渲染
         self.game = game_instance  # 关联的游戏实例
+
+    #  
+    def add_message(self, message):
+        """添加消息到控制台输出"""
+        self.core.add_output(message)
     
     def toggle(self):
         """切换控制台打开/关闭状态"""

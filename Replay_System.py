@@ -16,7 +16,7 @@ import math
 import traceback
 from enum import Enum
 from collections import namedtuple
-from data import SCREEN_WIDTH, SCREEN_HEIGHT, BACKGROUND, load_player_image, get_font, calculate_speed, PANEL_COLOR, TEXT_COLOR, INFO_COLOR, UI_PADDING, UI_LINE_SPACING, UI_PANEL_ALPHA, ADRENALINE_COLOR
+from data import *   # 导入游戏数据
 from player import Player
 
 class ReplayState(Enum):
@@ -601,41 +601,6 @@ class GameReplayer:
             # 减慢速度(模拟阻力)
             particle['vel'][0] *= 0.9
             particle['vel'][1] *= 0.9
-
-def create_background_grid(screen):
-    """
-    创建背景网格
-    
-    参数:
-    - screen: 游戏屏幕对象
-    
-    返回:
-    - pygame.Surface: 背景网格表面
-    """
-    # 计算地面位置
-    ground_y = screen.get_height() - data.scale_value(100, screen, False)
-    background_grid = pygame.Surface(screen.get_size())
-    background_grid.fill(BACKGROUND)
-    
-    # 计算网格大小
-    grid_size = data.scale_value(40, screen)
-    
-    # 绘制垂直线
-    for x in range(0, screen.get_width(), int(grid_size)):
-        pygame.draw.line(background_grid, (50, 50, 70), 
-                        (x, 0), (x, screen.get_height()), 1)
-    
-    # 绘制水平线
-    for y in range(0, screen.get_height(), int(grid_size)):
-        pygame.draw.line(background_grid, (50, 50, 70), 
-                        (0, y), (screen.get_width(), y), 1)
-    
-    # 绘制地面线
-    pygame.draw.line(background_grid, (100, 150, 100), 
-                    (0, ground_y), 
-                    (screen.get_width(), ground_y), 3)
-    
-    return background_grid
 
 def run_replay_mode(screen):
     """

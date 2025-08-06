@@ -11,6 +11,7 @@ import sys
 import time
 import json
 import console
+from data import create_background_grid
 from player import Player
 from enum import Enum
 
@@ -52,7 +53,7 @@ class Game:
         
         # 初始化UI元素
         self.ground_y = data.SCREEN_HEIGHT - 100
-        self.create_background_grid()
+        self.background_grid = create_background_grid(screen)
         self.create_ui_elements()
         
         # 加载肾上腺素配置
