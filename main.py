@@ -33,23 +33,54 @@ class ButtonManager:
 
 def create_menu_buttons(screen):
     """创建主菜单按钮的函数"""
-    button_width = 300
-    button_height = 60
-    start_y = data.SCREEN_HEIGHT * 0.4
+    button_width = data.MENU_BUTTON_WIDTH
+    button_height = data.MENU_BUTTON_HEIGHT
+    start_y = screen.get_height() * data.MENU_BUTTON_START_Y_RATIO
     
     return [
-        ButtonManager.create_button(data.SCREEN_WIDTH//2 - button_width//2, start_y, button_width, button_height, "开始游戏", screen),
-        ButtonManager.create_button(data.SCREEN_WIDTH//2 - button_width//2, start_y + 100, button_width, button_height, "回放游戏", screen),
-        ButtonManager.create_button(data.SCREEN_WIDTH//2 - button_width//2, start_y + 200, button_width, button_height, "设置", screen),
-        ButtonManager.create_button(data.SCREEN_WIDTH//2 - button_width//2, start_y + 300, button_width, button_height, "退出", screen)
+        ButtonManager.create_button(
+            screen.get_width() // 2 - button_width // 2, 
+            start_y, 
+            button_width, 
+            button_height, 
+            data.BUTTON_TEXT_START, 
+            screen
+        ),
+        ButtonManager.create_button(
+            screen.get_width() // 2 - button_width // 2, 
+            start_y + data.MENU_BUTTON_SPACING, 
+            button_width, 
+            button_height, 
+            data.BUTTON_TEXT_REPLAY, 
+            screen
+        ),
+        ButtonManager.create_button(
+            screen.get_width() // 2 - button_width // 2, 
+            start_y + data.MENU_BUTTON_SPACING * 2, 
+            button_width, 
+            button_height, 
+            data.BUTTON_TEXT_SETTINGS, 
+            screen
+        ),
+        ButtonManager.create_button(
+            screen.get_width() // 2 - button_width // 2, 
+            start_y + data.MENU_BUTTON_SPACING * 3, 
+            button_width, 
+            button_height, 
+            data.BUTTON_TEXT_EXIT, 
+            screen
+        )
     ]
 
 def draw_buttons(surface, buttons, title_pos, line_y):
     """集中绘制按钮及其相关元素"""
-    line_start_x = surface.get_width() // 2 - 180 * (surface.get_width() / data.BASE_WIDTH)
-    line_end_x = surface.get_width() // 2 + 180 * (surface.get_width() / data.BASE_WIDTH)
+    # 绘制装饰线
+    line_width = 180 * (surface.get_width() / data.BASE_WIDTH)
+    line_start_x = surface.get_width() // 2 - line_width
+    line_end_x = surface.get_width() // 2 + line_width
     pygame.draw.line(surface, data.ACCENT_COLOR, (line_start_x, line_y), (line_end_x, line_y), 3)
     
+    # 绘制所有按钮
     for button in buttons:
         button.draw(surface)
 
@@ -60,7 +91,7 @@ def main_menu():
     # 初始化Pygame
     pygame.init()
     screen = pygame.display.set_mode((data.SCREEN_WIDTH, data.SCREEN_HEIGHT), pygame.RESIZABLE)
-    pygame.display.set_caption("游戏主菜单")
+    pygame.display.set_caption(data.MAIN_MENU_TITLE)
 
     # 初始化音频系统
     pygame.mixer.init()
@@ -164,15 +195,15 @@ def main_menu():
                             screen.fill(data.BACKGROUND)
                             title_font_size = data.get_scaled_font(data.MENU_TITLE_FONT_SIZE, screen)
                             font_title = data.get_font(title_font_size)
-                            title = font_title.render("游戏主菜单", True, data.TEXT_COLOR)
+                            title = font_title.render(data.MAIN_MENU_TITLE, True, data.TEXT_COLOR)
                             title_pos = (
                                 screen.get_width() // 2 - title.get_width() // 2,
-                                data.scale_value(screen.get_height() * 0.2, screen, False)
+                                data.scale_value(screen.get_height() * data.MENU_TITLE_Y_RATIO, screen, False)
                             )
-                            line_y = data.scale_value(screen.get_height() * 0.25, screen, False)
+                            line_y = data.scale_value(screen.get_height() * data.MENU_TITLE_LINE_Y_RATIO, screen, False)
                             draw_buttons(screen, buttons, title_pos, line_y)
                             pygame.display.flip()
-                            pygame.time.delay(150)  # 短暂延迟让动画可见
+                            pygame.time.delay(data.BUTTON_CLICK_ANIMATION_DELAY)  # 短暂延迟让动画可见
                             
                             # 处理菜单选择，并检查是否需要重新创建按钮
                             recreate_buttons = handle_menu_selection(button.text, screen, console)
@@ -201,15 +232,15 @@ def main_menu():
         # 5.2 渲染标题
         title_font_size = data.get_scaled_font(data.MENU_TITLE_FONT_SIZE, screen)
         font_title = data.get_font(title_font_size)
-        title = font_title.render("游戏主菜单", True, data.TEXT_COLOR)
+        title = font_title.render(data.MAIN_MENU_TITLE, True, data.TEXT_COLOR)
         title_pos = (
             screen.get_width() // 2 - title.get_width() // 2,
-            data.scale_value(screen.get_height() * 0.2, screen, False)
+            data.scale_value(screen.get_height() * data.MENU_TITLE_Y_RATIO, screen, False)
         )
         screen.blit(title, title_pos)
         
         # 5.3 计算装饰线位置
-        line_y = data.scale_value(screen.get_height() * 0.25, screen, False)
+        line_y = data.scale_value(screen.get_height() * data.MENU_TITLE_LINE_Y_RATIO, screen, False)
         
         # 5.4 绘制所有按钮及其相关元素
         draw_buttons(screen, buttons, title_pos, line_y)
@@ -217,8 +248,9 @@ def main_menu():
         # 5.5 绘制说明文字
         info_font_size = data.get_scaled_font(data.INFO_FONT_SIZE, screen)
         font_info = data.get_font(info_font_size)
-        info_text = font_info.render("点击按钮选择功能 | 按ESC键退出 | ~键打开控制台", True, (150, 150, 150))
-        screen.blit(info_text, (screen.get_width() // 2 - info_text.get_width() // 2, screen.get_height() - 50))
+        info_text = font_info.render(data.MAIN_MENU_INFO, True, (150, 150, 150))
+        screen.blit(info_text, (screen.get_width() // 2 - info_text.get_width() // 2, 
+                    screen.get_height() - data.MENU_INFO_BOTTOM_MARGIN))
         
         # 5.6 更新和渲染控制台
         console.update()
@@ -247,16 +279,16 @@ def handle_menu_selection(selection, screen, console):
     处理菜单选择逻辑
     返回布尔值表示是否需要重新创建主菜单按钮
     """
-    if selection == "开始游戏":
+    if selection == data.BUTTON_TEXT_START:
         start_game(screen, console)
         return False  # 不需要重新创建按钮
-    elif selection == "回放游戏":
+    elif selection == data.BUTTON_TEXT_REPLAY:
         run_replay_mode(screen)
         return False  # 不需要重新创建按钮
-    elif selection == "设置":
+    elif selection == data.BUTTON_TEXT_SETTINGS:
         # 进入设置菜单，并返回是否需要重新创建按钮
         return settings_menu(screen, console)
-    elif selection == "退出":
+    elif selection == data.BUTTON_TEXT_EXIT:
         pygame.quit()
         sys.exit()
     return False
@@ -268,12 +300,13 @@ def settings_menu(screen, console):
     返回布尔值表示是否需要重新创建主菜单按钮
     """
     # 初始化
-    button_width = 300
-    button_height = 60
-    start_y = data.SCREEN_HEIGHT * 0.4
+    button_width = data.MENU_BUTTON_WIDTH
+    button_height = data.MENU_BUTTON_HEIGHT
+    start_y = screen.get_height() * data.SETTINGS_BUTTON_START_Y_RATIO
 
     # 创建按钮文本
-    button_style_text = f"按钮样式: {'COD风格' if ButtonManager.get_style() == 'COD' else '默认'}"
+    style_name = data.STYLE_NAMES.get(ButtonManager.get_style(), "默认")
+    button_style_text = data.BUTTON_TEXT_STYLE_FORMAT.format(style_name)
     
     # 音频
     try:
@@ -285,10 +318,22 @@ def settings_menu(screen, console):
     
     # 创建按钮
     buttons = [
-        ButtonManager.create_button(data.SCREEN_WIDTH//2 - button_width//2, start_y, button_width, button_height, 
-                    button_style_text, screen),
-        ButtonManager.create_button(data.SCREEN_WIDTH//2 - button_width//2, start_y + 100, button_width, button_height, 
-                    "返回", screen)
+        ButtonManager.create_button(
+            screen.get_width() // 2 - button_width // 2, 
+            start_y, 
+            button_width, 
+            button_height, 
+            button_style_text, 
+            screen
+        ),
+        ButtonManager.create_button(
+            screen.get_width() // 2 - button_width // 2, 
+            start_y + data.SETTINGS_BUTTON_SPACING, 
+            button_width, 
+            button_height, 
+            data.BUTTON_TEXT_BACK, 
+            screen
+        )
     ]
     
     # 当前选中的选项索引
@@ -360,10 +405,10 @@ def settings_menu(screen, console):
                             screen.fill(data.BACKGROUND)
                             title_font_size = data.get_scaled_font(data.MENU_TITLE_FONT_SIZE, screen)
                             font_title = data.get_font(title_font_size)
-                            title = font_title.render("设置", True, data.TEXT_COLOR)
+                            title = font_title.render(data.SETTINGS_MENU_TITLE, True, data.TEXT_COLOR)
                             title_pos = (
                                 screen.get_width() // 2 - title.get_width() // 2,
-                                data.scale_value(screen.get_height() * 0.2, screen, False)
+                                data.scale_value(screen.get_height() * data.MENU_TITLE_Y_RATIO, screen, False)
                             )
                             screen.blit(title, title_pos)
                             
@@ -371,7 +416,7 @@ def settings_menu(screen, console):
                                 btn.draw(screen)
                             
                             pygame.display.flip()
-                            pygame.time.delay(150)  # 短暂延迟让动画可见
+                            pygame.time.delay(data.BUTTON_CLICK_ANIMATION_DELAY)  # 短暂延迟让动画可见
                             
                             # 处理设置选择
                             if i == 0:  # 按钮样式切换
@@ -380,10 +425,11 @@ def settings_menu(screen, console):
                                 ButtonManager.set_style(new_style)
                                 
                                 # 更新按钮文本
-                                buttons[0].text = f"按钮样式: {'COD风格' if new_style == 'COD' else '默认'}"
+                                new_style_name = data.STYLE_NAMES.get(new_style, "默认")
+                                buttons[0].text = data.BUTTON_TEXT_STYLE_FORMAT.format(new_style_name)
                                 
                                 # 通知用户设置已更改
-                                console.core.add_output(f"按钮样式已切换为 {'COD风格' if new_style == 'COD' else '默认'}")
+                                console.core.add_output(f"按钮样式已切换为 {new_style_name}")
                                 style_changed = True  # 标记样式已更改
                             elif i == 1:  # 返回
                                 running = False
@@ -406,10 +452,10 @@ def settings_menu(screen, console):
         # 绘制标题
         title_font_size = data.get_scaled_font(data.MENU_TITLE_FONT_SIZE, screen)
         font_title = data.get_font(title_font_size)
-        title = font_title.render("设置", True, data.TEXT_COLOR)
+        title = font_title.render(data.SETTINGS_MENU_TITLE, True, data.TEXT_COLOR)
         title_pos = (
             screen.get_width() // 2 - title.get_width() // 2,
-            data.scale_value(screen.get_height() * 0.2, screen, False)
+            data.scale_value(screen.get_height() * data.MENU_TITLE_Y_RATIO, screen, False)
         )
         screen.blit(title, title_pos)
         
@@ -420,8 +466,9 @@ def settings_menu(screen, console):
         # 绘制说明文字
         info_font_size = data.get_scaled_font(data.INFO_FONT_SIZE, screen)
         font_info = data.get_font(info_font_size)
-        info_text = font_info.render("按ESC键返回主菜单", True, (150, 150, 150))
-        screen.blit(info_text, (screen.get_width() // 2 - info_text.get_width() // 2, screen.get_height() - 50))
+        info_text = font_info.render(data.SETTINGS_MENU_INFO, True, (150, 150, 150))
+        screen.blit(info_text, (screen.get_width() // 2 - info_text.get_width() // 2, 
+                               screen.get_height() - data.MENU_INFO_BOTTOM_MARGIN))
         
         # 更新和渲染控制台
         console.update()

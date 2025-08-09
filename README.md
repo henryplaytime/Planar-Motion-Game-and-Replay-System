@@ -1,5 +1,4 @@
-
-# 平面移动游戏与回放系统 (版本0.2.4)
+# 平面移动游戏与回放系统 (版本0.2.5)
 
 ## 项目名称
 
@@ -21,6 +20,19 @@
 ---
 
 ## 版本历史更新
+
+### v0.2.5(2025-08-09) - 代码重构
+
+* **主要重构内容**：
+  * 移除了所有硬编码的文本字符串，替换为data.py中定义的常量
+  * 移除了所有硬编码的颜色值，替换为data.py中定义的颜色常量
+  * 使用格式化字符串常量来统一文本格式
+  * 简化了UI元素的创建，直接从data.py获取预设文本
+  * 统一了字体大小的获取方式
+* **新增文件夹**：
+  * 新增user文件夹
+  * 新增user_config.json文件，用于保存用户设置
+  * 注意：功能未集成
 
 ### v0.2.4 (2025-08-06) - UI系统升级与性能优化
 
@@ -85,13 +97,13 @@
 
 ### 1. `data.py` - 游戏常量与工具函数
 
-**核心功能**：
+#### **核心功能**：
 
 * 定义屏幕尺寸、颜色、物理参数等全局常量
 * 提供加载玩家图像、获取字体等工具函数
 * 屏幕坐标和尺寸缩放工具
 
-**关键属性**：
+#### **关键属性**：
 
 ```python
 # 物理参数（可修改）
@@ -119,14 +131,14 @@ GLOW_COLOR = (180, 150, 20, 100)  # 半透明琥珀色光晕
 
 ### 2. `player.py` - 玩家角色实现
 
-**核心功能**：
+#### **核心功能**：
 
 * 实现基于物理的角色移动系统
 * 处理碰撞检测和边界限制
 * 管理玩家状态（位置、速度、冲刺状态）
 * 肾上腺素效果激活与冷却管理
 
-**关键属性与方法**：
+#### **关键属性与方法**：
 
 ```python
 class Player:
@@ -157,7 +169,7 @@ class Player:
         return True
 ```
 
-**肾上腺素集成物理系统**：
+#### **肾上腺素集成物理系统**：
 
 ```python
 def update(self, pressed_keys, delta_time):
@@ -175,7 +187,7 @@ def update(self, pressed_keys, delta_time):
 
 ### 3. `game.py` - 游戏主逻辑
 
-**核心功能**：
+#### **核心功能**：
 
 * 管理游戏主循环（update/render）
 * 处理游戏事件（键盘/窗口大小）
@@ -183,7 +195,7 @@ def update(self, pressed_keys, delta_time):
 * 协调玩家、控制台和录制系统
 * 肾上腺素效果集成
 
-**肾上腺素效果激活**：
+#### **肾上腺素效果激活**：
 
 ```python
 def update(self):
@@ -205,7 +217,7 @@ def update(self):
     ...
 ```
 
-**录制系统更新（记录肾上腺素状态）**：
+#### **录制系统更新（记录肾上腺素状态）**：
 
 ```python
 def record_frame(self, player, pressed_keys):
@@ -224,7 +236,7 @@ def record_frame(self, player, pressed_keys):
 
 ### 4. `Replay_System.py` - 回放系统
 
-**肾上腺素回放效果实现**：
+#### **肾上腺素回放效果实现**：
 
 ```python
 def apply_interpolated_snapshot(self):
@@ -258,7 +270,7 @@ def _create_adrenaline_particle(self):
 
 ### 5. `console.py` - 控制台系统
 
-**replay命令实现**：
+#### **replay命令实现**：
 
 ```python
 def _cmd_replay(self, args, game=None):
@@ -279,7 +291,7 @@ def _cmd_replay(self, args, game=None):
         if not replay_files:
             self.add_output("没有找到回放文件")
             return
-      
+  
         self.add_output("可用回放文件:")
         for i, file in enumerate(replay_files):
             self.add_output(f"  {i+1}. {file}")
@@ -319,7 +331,7 @@ def _cmd_replay(self, args, game=None):
         self.add_output(f"播放回放失败: {str(e)}")
 ```
 
-**控制台高度配置**：
+#### **控制台高度配置**：
 
 ```python
 class Console:
@@ -330,7 +342,7 @@ class Console:
 
 ### 6. `item.py` - 物品系统
 
-**肾上腺素物品实现**：
+#### **肾上腺素物品实现**：
 
 ```python
 class AdrenalineItem(Item):
@@ -365,7 +377,7 @@ class AdrenalineItem(Item):
 
 ### 7. `main.py` - 游戏入口
 
-**专业UI系统实现**：
+#### **专业UI系统实现**：
 
 ```python
 # 全局按钮样式设置
@@ -400,7 +412,7 @@ def create_menu_buttons(screen):
     ]
 ```
 
-**设置菜单实现**：
+#### **设置菜单实现**：
 
 ```python
 def settings_menu(screen, console):
@@ -444,7 +456,7 @@ def settings_menu(screen, console):
 
 ### 8. `source/menu_btn_style.py` - 按钮样式库
 
-**专业按钮系统实现**：
+#### **专业按钮系统实现**：
 
 ```python
 class CODButton:
@@ -489,7 +501,7 @@ def create_button(style, x, y, width, height, text, screen):
 
 ## 肾上腺素系统配置说明
 
-肾上腺素效果参数可通过 `config/item.json`文件配置：
+### 肾上腺素效果参数可通过 `config/item.json`文件配置：
 
 ```json
 {
@@ -505,7 +517,7 @@ def create_button(style, x, y, width, height, text, screen):
 }
 ```
 
-**使用方法**：
+### **使用方法**：
 
 1. 游戏中按 `Q`键激活肾上腺素效果
 2. 控制台使用 `give adrenaline`命令直接获得效果
@@ -515,19 +527,19 @@ def create_button(style, x, y, width, height, text, screen):
 
 ## 控制台命令更新
 
-| 命令             | 参数          | 功能                 | 例子             |
-| ---------------- | ------------- | -------------------- | ---------------- |
-| **give**   | adrenaline    | 给予玩家肾上腺素效果 | give adrenaline  |
-| **replay** | [文件名/编号] | 强制播放指定回放文件 | replay demo1.dem |
-| help             | 无            | 显示所有可用命令     | help             |
-| clear            | 无            | 清除控制台输出       | clear            |
-| exit             | 无            | 关闭控制台           | exit             |
-| time             | 无            | 显示游戏运行时间     | time             |
-| fps              | 无            | 显示当前帧率         | fps              |
-| pos              | 无            | 显示玩家坐标         | pos              |
-| speed            | [数值]        | 设置玩家移动速度     | speed 260        |
-| record           | 无            | 开始/停止录制        | record           |
-| show             | 无            | 显示/隐藏检测面板    | show             |
+| 命令   | 参数          | 功能                 | 例子             |
+| ------ | ------------- | -------------------- | ---------------- |
+| give   | adrenaline    | 给予玩家肾上腺素效果 | give adrenaline  |
+| replay | [文件名/编号] | 强制播放指定回放文件 | replay demo1.dem |
+| help   | 无            | 显示所有可用命令     | help             |
+| clear  | 无            | 清除控制台输出       | clear            |
+| exit   | 无            | 关闭控制台           | exit             |
+| time   | 无            | 显示游戏运行时间     | time             |
+| fps    | 无            | 显示当前帧率         | fps              |
+| pos    | 无            | 显示玩家坐标         | pos              |
+| speed  | [数值]        | 设置玩家移动速度     | speed 260        |
+| record | 无            | 开始/停止录制        | record           |
+| show   | 无            | 显示/隐藏检测面板    | show             |
 
 ---
 
@@ -570,12 +582,12 @@ def create_button(style, x, y, width, height, text, screen):
 ## 项目扩展建议
 
 1. **修改物理参数**：调整加速度、摩擦力等获得不同手感
-3. **添加游戏元素**：实现障碍物、收集物等游戏对象
-4. **扩展物品系统**：添加新物品类型（如药水）
-5. **网络功能扩展**：添加多人游戏支持
-6. **肾上腺素视觉增强**：添加屏幕特效和角色视觉效果
-7. **音效管理系统**：添加音效设置界面
-8. **更多UI风格**：增加额外的按钮风格选项
+2. **添加游戏元素**：实现障碍物、收集物等游戏对象
+3. **扩展物品系统**：添加新物品类型（如药水）
+4. **网络功能扩展**：添加多人游戏支持
+5. **肾上腺素视觉增强**：添加屏幕特效和角色视觉效果
+6. **音效管理系统**：添加音效设置界面
+7. **更多UI风格**：增加额外的按钮风格选项
 
 ---
 

@@ -52,7 +52,7 @@ class Game:
         self._init_recording()
         
         # 初始化UI元素
-        self.ground_y = data.SCREEN_HEIGHT - 100
+        self.ground_y = data.SCREEN_HEIGHT - data.GROUND_OFFSET
         self.background_grid = create_background_grid(screen)
         self.create_ui_elements()
         
@@ -110,40 +110,10 @@ class Game:
                 "cooldown": 15.0
             }
     
-    def create_background_grid(self):
-        """创建背景网格表面"""
-        self.background_grid = pygame.Surface((data.SCREEN_WIDTH, data.SCREEN_HEIGHT))
-        self.background_grid.fill(data.BACKGROUND)  # 填充背景色
-        # 绘制垂直线
-        for x in range(0, data.SCREEN_WIDTH, 40):
-            pygame.draw.line(self.background_grid, data.GRID_COLOR, 
-                            (x, 0), (x, data.SCREEN_HEIGHT), 1)
-        # 绘制水平线
-        for y in range(0, data.SCREEN_HEIGHT, 40):
-            pygame.draw.line(self.background_grid, data.GRID_COLOR, 
-                            (0, y), (data.SCREEN_WIDTH, y), 1)
-        # 绘制地面线
-        pygame.draw.line(self.background_grid, data.GROUND_COLOR, 
-                        (0, self.ground_y), 
-                        (data.SCREEN_WIDTH, self.ground_y), 3)
-    
     def create_ui_elements(self):
         """创建UI元素文本"""
-        self.control_info_texts = [  # 控制信息文本
-            "WASD键: 移动玩家",
-            "Shift键: 奔跑加速",
-            "Q键: 使用肾上腺素",
-            "F1键: 显示/隐藏键盘状态",
-            "F2键: 开启/关闭录制",
-            "ESC键: 退出游戏"
-        ]
-        self.move_info_texts = [  # 移动信息文本
-            "移动系统: 平滑加速物理",
-            "按下方向键加速",
-            "松开方向键逐渐减速",
-            "Shift键增加最大速度",
-            "Q键使用肾上腺素提升速度"
-        ]
+        self.control_info_texts = data.CONTROL_INFO_TEXTS
+        self.move_info_texts = data.MOVE_INFO_TEXTS
     
     def run(self):
         """运行游戏主循环"""
@@ -195,7 +165,7 @@ class Game:
     def start_recording(self):
         """开始游戏录制"""
         if self.recording: return  # 如果已经在录制则返回
-        timestamp = time.strftime("%Y%m%d_%H%M%S")  # 生成时间戳
+        timestamp = data.get_timestamp()  # 生成时间戳
         filename = f"game_recording_{timestamp}.dem"  # 生成文件名
         try:
             self.record_file = open(filename, 'w')  # 打开录制文件
@@ -232,23 +202,8 @@ class Game:
             self.record_file = None
     
     def record_high_level_command(self, pressed_keys):
-        """
-        序列化高阶命令
-        
-        参数:
-        - pressed_keys: 按键状态列表
-        
-        返回:
-        - str: 逗号分隔的命令字符串
-        """
-        command = []
-        if pressed_keys[pygame.K_w]: command.append('W')
-        if pressed_keys[pygame.K_s]: command.append('S')
-        if pressed_keys[pygame.K_a]: command.append('A')
-        if pressed_keys[pygame.K_d]: command.append('D')
-        if pressed_keys[pygame.K_LSHIFT] or pressed_keys[pygame.K_RSHIFT]: 
-            command.append('SHIFT')
-        return ",".join(command)
+        """序列化高阶命令"""
+        return data.serialize_high_level_command(pressed_keys)
     
     def record_frame(self, player, pressed_keys):
         """
@@ -368,8 +323,8 @@ class Game:
     
     def draw_recording_indicator(self):
         """渲染录制状态指示器"""
-        rec_text = data.get_font(data.get_scaled_font(24, self.screen)).render(
-            "录制中...", True, (255, 50, 50))
+        rec_text = data.get_font(data.get_scaled_font(data.INFO_FONT_SIZE, self.screen)).render(
+            data.RECORDING_TEXT, True, data.RECORDING_COLOR)
         rec_pos = data.scale_position(
             data.SCREEN_WIDTH - rec_text.get_width() - 20, 
             20, 
@@ -380,11 +335,11 @@ class Game:
     def draw_player_status(self):
         """渲染玩家状态信息"""
         # 渲染状态文本(行走/奔跑)
-        status = "奔跑中" if self.player.sprinting else "行走中"
-        status_font = data.get_scaled_font(24, self.screen)
+        status = data.PLAYER_STATUS_RUNNING if self.player.sprinting else data.PLAYER_STATUS_WALKING
+        status_font = data.get_scaled_font(data.INFO_FONT_SIZE, self.screen)
         status_text = data.get_font(status_font).render(
             status, True, 
-            (255, 200, 0) if self.player.sprinting else (200, 200, 255))
+            data.STATUS_RUNNING_COLOR if self.player.sprinting else data.STATUS_WALKING_COLOR)
         text_rect = status_text.get_rect(center=(
             int(self.player.position[0]), 
             int(self.player.position[1] - 60)
@@ -392,36 +347,38 @@ class Game:
         
         # 渲染状态背景
         bg_rect = text_rect.inflate(20, 10)
-        pygame.draw.rect(self.screen, (30, 30, 50, 180), bg_rect, border_radius=5)
-        pygame.draw.rect(self.screen, (100, 150, 200), bg_rect, 2, border_radius=5)
+        pygame.draw.rect(self.screen, data.get_rgba_color(data.PANEL_COLOR), bg_rect, border_radius=5)
+        pygame.draw.rect(self.screen, data.UI_HIGHLIGHT, bg_rect, 2, border_radius=5)
         self.screen.blit(status_text, text_rect)
         
         # 渲染速度信息
         speed = data.calculate_speed(self.player.velocity)
-        speed_text = data.get_font(data.get_scaled_font(20, self.screen)).render(
-            f"速度: {speed:.1f} 像素/秒", True, (180, 230, 255))
+        speed_text = data.get_font(data.get_scaled_font(data.SMALL_FONT_SIZE, self.screen)).render(
+            data.PLAYER_SPEED_FORMAT.format(speed), True, data.INFO_LIGHT_BLUE)
         speed_pos = data.scale_position(10, data.SCREEN_HEIGHT - 60, self.screen)
         self.screen.blit(speed_text, speed_pos)
         
         # 渲染位置信息
-        pos_text = data.get_font(data.get_scaled_font(20, self.screen)).render(
-            f"位置: ({int(self.player.position[0])}, {int(self.player.position[1])})", 
-            True, (180, 230, 255))
+        pos_text = data.get_font(data.get_scaled_font(data.SMALL_FONT_SIZE, self.screen)).render(
+            data.PLAYER_POSITION_FORMAT.format(
+                int(self.player.position[0]), 
+                int(self.player.position[1])), 
+            True, data.INFO_LIGHT_BLUE)
         pos_pos = data.scale_position(10, data.SCREEN_HEIGHT - 30, self.screen)
         self.screen.blit(pos_text, pos_pos)
         
         # 渲染地面状态
-        ground_status = "地面" if self.player.grounded else "空中"
-        ground_text = data.get_font(data.get_scaled_font(20, self.screen)).render(
-            f"状态: {ground_status}", True, 
-            (150, 255, 150) if self.player.grounded else (255, 150, 150))
+        ground_status = data.PLAYER_STATUS_GROUND if self.player.grounded else data.PLAYER_STATUS_AIR
+        ground_text = data.get_font(data.get_scaled_font(data.SMALL_FONT_SIZE, self.screen)).render(
+            data.PLAYER_STATUS_FORMAT.format(ground_status), True, 
+            data.STATUS_GROUND_COLOR if self.player.grounded else data.STATUS_AIR_COLOR)
         ground_pos = data.scale_position(10, data.SCREEN_HEIGHT - 90, self.screen)
         self.screen.blit(ground_text, ground_pos)
         
         # 渲染肾上腺素状态
         if self.player.adrenaline_active:
-            adrenaline_text = data.get_font(data.get_scaled_font(20, self.screen)).render(
-                "肾上腺素激活中!", True, (255, 50, 50))
+            adrenaline_text = data.get_font(data.get_scaled_font(data.SMALL_FONT_SIZE, self.screen)).render(
+                data.PLAYER_ADRENALINE_ACTIVE, True, data.ADRENALINE_ACTIVE_COLOR)
             adrenaline_pos = data.scale_position(
                 10, data.SCREEN_HEIGHT - 120, self.screen)
             self.screen.blit(adrenaline_text, adrenaline_pos)
@@ -437,27 +394,27 @@ class Game:
         # 创建信息项
         items = []
         for control in self.control_info_texts:
-            items.append((control, (200, 220, 255)))
+            items.append((control, data.TEXT_COLOR))
         
         # F1键状态
-        f1_status = "已按下" if pressed_keys[pygame.K_F1] else "未按下"
+        f1_status = data.KEY_PRESSED_STATUS if pressed_keys[pygame.K_F1] else data.KEY_NOT_PRESSED_STATUS
         f1_color = data.KEY_PRESSED_COLOR if pressed_keys[pygame.K_F1] else data.TEXT_COLOR
-        items.append((f"F1键状态: {f1_status}", f1_color))
+        items.append((data.KEY_STATUS_FORMAT.format("F1键状态", f1_status), f1_color))
         
         # F2键状态
-        f2_status = "已按下" if pressed_keys[pygame.K_F2] else "未按下"
-        f2_color = (255, 50, 50) if self.recording else data.TEXT_COLOR
-        items.append((f"F2键状态: {f2_status}", f2_color))
+        f2_status = data.KEY_PRESSED_STATUS if pressed_keys[pygame.K_F2] else data.KEY_NOT_PRESSED_STATUS
+        f2_color = data.RECORDING_COLOR if self.recording else data.TEXT_COLOR
+        items.append((data.KEY_STATUS_FORMAT.format("F2键状态", f2_status), f2_color))
         
         # 录制状态
-        rec_status = "开启" if self.recording else "关闭"
-        rec_color = (255, 50, 50) if self.recording else (100, 200, 100)
-        items.append((f"录制状态: {rec_status}", rec_color))
+        rec_status = data.RECORDING_STATUS_ON if self.recording else data.RECORDING_STATUS_OFF
+        rec_color = data.RECORDING_COLOR if self.recording else (100, 200, 100)
+        items.append((data.RECORDING_STATUS_FORMAT.format(rec_status), rec_color))
         
         # 肾上腺素状态
-        adrenaline_status = "激活中" if self.player.adrenaline_active else "可用"
-        adrenaline_color = (255, 50, 50) if self.player.adrenaline_active else (100, 200, 100)
-        items.append((f"肾上腺素: {adrenaline_status}", adrenaline_color))
+        adrenaline_status = data.ADRENALINE_ACTIVE if self.player.adrenaline_active else data.ADRENALINE_AVAILABLE
+        adrenaline_color = data.ADRENALINE_ACTIVE_COLOR if self.player.adrenaline_active else data.ADRENALINE_AVAILABLE_COLOR
+        items.append((data.PLAYER_ADRENALINE_STATUS_FORMAT.format(adrenaline_status), adrenaline_color))
         
         # 计算面板尺寸
         max_width = 0
@@ -465,15 +422,15 @@ class Game:
             text_width = font.size(text)[0]
             if text_width > max_width:
                 max_width = text_width
-        title_width = title_font.size("玩家控制演示 (平面移动游戏)")[0]
+        title_width = title_font.size(data.PANEL_TITLE_GAME)[0]
         max_width = max(max_width, title_width)
         panel_width = max_width + 2 * data.UI_PADDING
         panel_height = data.UI_PADDING * 2 + (len(items) + 2) * data.UI_LINE_SPACING
         
         # 创建面板
         panel = pygame.Surface((panel_width, panel_height), pygame.SRCALPHA)
-        panel.fill((*data.PANEL_COLOR[:3], data.UI_PANEL_ALPHA))
-        pygame.draw.rect(panel, (100, 150, 200), panel.get_rect(), 2)
+        panel.fill(data.get_rgba_color(data.PANEL_COLOR, data.UI_PANEL_ALPHA))
+        pygame.draw.rect(panel, data.UI_HIGHLIGHT, panel.get_rect(), 2)
         
         # 渲染面板
         panel_pos = data.scale_position(
@@ -484,7 +441,7 @@ class Game:
         self.screen.blit(panel, panel_pos)
         
         # 渲染标题
-        title = title_font.render("玩家控制演示 (平面移动游戏)", True, data.INFO_COLOR)
+        title = title_font.render(data.PANEL_TITLE_GAME, True, data.INFO_COLOR)
         title_pos = (
             panel_pos[0] + (panel_width - title.get_width()) // 2,
             panel_pos[1] + 10
@@ -514,40 +471,40 @@ class Game:
         items = []
         for key, name in data.KEYS_TO_MONITOR.items():
             is_pressed = pressed_keys[key]  # 按键状态
-            status = "按下" if is_pressed else "未按下"
+            status = data.KEY_PRESSED_STATUS if is_pressed else data.KEY_NOT_PRESSED_STATUS
             color = data.KEY_PRESSED_COLOR if is_pressed else data.TEXT_COLOR
-            items.append((f"{name}: {status}", color))
+            items.append((data.KEY_STATUS_FORMAT.format(name, status), color))
         
         # 录制状态
-        rec_status = "开启" if self.recording else "关闭"
-        rec_color = (255, 50, 50) if self.recording else (200, 200, 200)
-        items.append((f"录制状态: {rec_status}", rec_color))
+        rec_status = data.RECORDING_STATUS_ON if self.recording else data.RECORDING_STATUS_OFF
+        rec_color = data.RECORDING_COLOR if self.recording else (200, 200, 200)
+        items.append((data.RECORDING_STATUS_FORMAT.format(rec_status), rec_color))
         
         # 添加肾上腺素状态项
-        adrenaline_status = "激活中" if self.player.adrenaline_active else "可用"
-        adrenaline_color = (255, 50, 50) if self.player.adrenaline_active else (100, 200, 100)
-        items.append((f"肾上腺素: {adrenaline_status}", adrenaline_color))
+        adrenaline_status = data.ADRENALINE_ACTIVE if self.player.adrenaline_active else data.ADRENALINE_AVAILABLE
+        adrenaline_color = data.ADRENALINE_ACTIVE_COLOR if self.player.adrenaline_active else data.ADRENALINE_AVAILABLE_COLOR
+        items.append((data.PLAYER_ADRENALINE_STATUS_FORMAT.format(adrenaline_status), adrenaline_color))
         
         # 如果激活中，显示剩余时间
         if self.player.adrenaline_active:
             remaining = self.player.adrenaline_active_end - (pygame.time.get_ticks() / 1000.0)
-            items.append((f"剩余时间: {remaining:.1f}秒", (255, 200, 0)))
+            items.append((data.PLAYER_ADRENALINE_REMAINING_FORMAT.format(remaining), data.ADRENALINE_REMAINING_COLOR))
         
         # 如果在冷却中，显示冷却时间
         elif (pygame.time.get_ticks() / 1000.0) < self.player.adrenaline_cooldown_end:
             cooldown = self.player.adrenaline_cooldown_end - (pygame.time.get_ticks() / 1000.0)
-            items.append((f"冷却时间: {cooldown:.1f}秒", (200, 200, 200)))
+            items.append((data.PLAYER_ADRENALINE_COOLDOWN_FORMAT.format(cooldown), data.ADRENALINE_COOLDOWN_COLOR))
         
         # 添加游戏信息项
         info_texts = [
-            f"当前速度: {data.calculate_speed(self.player.velocity):.1f} 像素/秒",
-            f"加速度: {data.ACCELERATION} 像素/秒²",
-            f"减速度: {data.DECELERATION} 像素/秒²",
-            f"摩擦力: {data.FRICTION}",
-            f"帧时间: {delta_time*1000:.1f} 毫秒"
+            data.GAME_INFO_SPEED_FORMAT.format(data.calculate_speed(self.player.velocity)),
+            data.GAME_INFO_ACCELERATION_FORMAT.format(data.ACCELERATION),
+            data.GAME_INFO_DECELERATION_FORMAT.format(data.DECELERATION),
+            data.GAME_INFO_FRICTION_FORMAT.format(data.FRICTION),
+            data.GAME_INFO_FRAME_TIME_FORMAT.format(delta_time*1000)
         ]
         for text in info_texts:
-            items.append((text, (200, 220, 255)))
+            items.append((text, data.INFO_LIGHT_BLUE))
         
         # 计算面板尺寸
         max_width = 0
@@ -555,22 +512,22 @@ class Game:
             text_width = font.size(text)[0]
             if text_width > max_width:
                 max_width = text_width
-        title_width = title_font.size("键盘状态检测")[0]
+        title_width = title_font.size(data.PANEL_TITLE_DETECTION)[0]
         max_width = max(max_width, title_width)
         panel_width = max_width + 2 * data.UI_PADDING
         panel_height = data.UI_PADDING * 2 + (len(items) + 2) * data.UI_LINE_SPACING
         
         # 创建面板
         panel = pygame.Surface((panel_width, panel_height), pygame.SRCALPHA)
-        panel.fill((*data.PANEL_COLOR[:3], data.UI_PANEL_ALPHA))
-        pygame.draw.rect(panel, (100, 150, 200), panel.get_rect(), 2)
+        panel.fill(data.get_rgba_color(data.PANEL_COLOR, data.UI_PANEL_ALPHA))
+        pygame.draw.rect(panel, data.UI_HIGHLIGHT, panel.get_rect(), 2)
         
         # 渲染面板
         panel_pos = data.scale_position(20, 20, self.screen)
         self.screen.blit(panel, panel_pos)
         
         # 渲染标题
-        title = title_font.render("键盘状态检测", True, data.INFO_COLOR)
+        title = title_font.render(data.PANEL_TITLE_DETECTION, True, data.INFO_COLOR)
         title_pos = (panel_pos[0] + data.UI_PADDING, panel_pos[1] + data.UI_PADDING)
         self.screen.blit(title, title_pos)
         

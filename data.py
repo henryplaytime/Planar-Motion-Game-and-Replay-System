@@ -102,6 +102,117 @@ KEYS_TO_MONITOR = {
     pygame.K_F2: "F2键"  # 开始/停止录制
 }
 
+# === 菜单界面常量 ===
+# 主菜单按钮设置
+MENU_BUTTON_WIDTH = 300
+MENU_BUTTON_HEIGHT = 60
+MENU_BUTTON_START_Y_RATIO = 0.4  # 起始Y位置（屏幕高度的比例）
+MENU_BUTTON_SPACING = 100  # 按钮之间的垂直间距
+MENU_TITLE_Y_RATIO = 0.2  # 标题的Y位置（屏幕高度的比例）
+MENU_TITLE_LINE_Y_RATIO = 0.25  # 标题下方装饰线的Y位置（屏幕高度的比例）
+MENU_INFO_BOTTOM_MARGIN = 50  # 说明文字距离屏幕底部的距离
+
+# 设置菜单按钮设置
+SETTINGS_BUTTON_START_Y_RATIO = 0.4  # 设置菜单按钮起始Y位置（屏幕高度的比例）
+SETTINGS_BUTTON_SPACING = 100  # 设置菜单按钮之间的垂直间距
+
+# 按钮文本
+BUTTON_TEXT_START = "开始游戏"
+BUTTON_TEXT_REPLAY = "回放游戏"
+BUTTON_TEXT_SETTINGS = "设置"
+BUTTON_TEXT_EXIT = "退出"
+BUTTON_TEXT_BACK = "返回"
+BUTTON_TEXT_STYLE_FORMAT = "按钮样式: {}"  # 格式化字符串用于按钮样式文本
+
+# 菜单标题文本
+MAIN_MENU_TITLE = "游戏主菜单"
+SETTINGS_MENU_TITLE = "设置"
+
+# 信息文本
+MAIN_MENU_INFO = "点击按钮选择功能 | 按ESC键退出 | ~键打开控制台"
+SETTINGS_MENU_INFO = "按ESC键返回主菜单"
+
+# 样式名称映射
+STYLE_NAMES = {
+    "COD": "COD风格",
+    "Default": "默认"
+}
+
+# 动画延迟时间
+BUTTON_CLICK_ANIMATION_DELAY = 150  # 按钮点击动画延迟（毫秒）
+
+# === 游戏文本常量 ===
+# 控制信息
+CONTROL_INFO_TEXTS = [
+    "WASD键: 移动玩家",
+    "Shift键: 奔跑加速",
+    "Q键: 使用肾上腺素",
+    "F1键: 显示/隐藏键盘状态",
+    "F2键: 开启/关闭录制",
+    "ESC键: 退出游戏"
+]
+
+# 移动信息
+MOVE_INFO_TEXTS = [
+    "移动系统: 平滑加速物理",
+    "按下方向键加速",
+    "松开方向键逐渐减速",
+    "Shift键增加最大速度",
+    "Q键使用肾上腺素提升速度"
+]
+
+# 玩家状态文本
+PLAYER_STATUS_WALKING = "行走中"
+PLAYER_STATUS_RUNNING = "奔跑中"
+PLAYER_STATUS_GROUND = "地面"
+PLAYER_STATUS_AIR = "空中"
+PLAYER_ADRENALINE_ACTIVE = "肾上腺素激活中!"
+PLAYER_SPEED_FORMAT = "速度: {:.1f} 像素/秒"
+PLAYER_POSITION_FORMAT = "位置: ({}, {})"
+PLAYER_STATUS_FORMAT = "状态: {}"
+PLAYER_ADRENALINE_STATUS_FORMAT = "肾上腺素: {}"
+PLAYER_ADRENALINE_REMAINING_FORMAT = "剩余时间: {:.1f}秒"
+PLAYER_ADRENALINE_COOLDOWN_FORMAT = "冷却时间: {:.1f}秒"
+
+# 录制状态
+RECORDING_TEXT = "录制中..."
+RECORDING_STATUS_ON = "开启"
+RECORDING_STATUS_OFF = "关闭"
+RECORDING_STATUS_FORMAT = "录制状态: {}"
+
+# 按键状态
+KEY_PRESSED_STATUS = "已按下"
+KEY_NOT_PRESSED_STATUS = "未按下"
+KEY_STATUS_FORMAT = "{}: {}"
+
+# 游戏信息
+GAME_INFO_FRAME_TIME_FORMAT = "帧时间: {:.1f} 毫秒"
+GAME_INFO_SPEED_FORMAT = "当前速度: {:.1f} 像素/秒"
+GAME_INFO_ACCELERATION_FORMAT = "加速度: {} 像素/秒²"
+GAME_INFO_DECELERATION_FORMAT = "减速度: {} 像素/秒²"
+GAME_INFO_FRICTION_FORMAT = "摩擦力: {}"
+
+# 面板标题
+PANEL_TITLE_GAME = "玩家控制演示 (平面移动游戏)"
+PANEL_TITLE_DETECTION = "键盘状态检测"
+
+# 肾上腺素状态
+ADRENALINE_ACTIVE = "激活中"
+ADRENALINE_AVAILABLE = "可用"
+
+# === 颜色常量扩展 ===
+# 状态文本颜色
+STATUS_WALKING_COLOR = (200, 200, 255)
+STATUS_RUNNING_COLOR = (255, 200, 0)
+STATUS_GROUND_COLOR = (150, 255, 150)
+STATUS_AIR_COLOR = (255, 150, 150)
+RECORDING_COLOR = (255, 50, 50)
+ADRENALINE_ACTIVE_COLOR = (255, 50, 50)
+ADRENALINE_AVAILABLE_COLOR = (100, 200, 100)
+INFO_LIGHT_BLUE = (180, 230, 255)
+ADRENALINE_REMAINING_COLOR = (255, 200, 0)
+ADRENALINE_COOLDOWN_COLOR = (200, 200, 200)
+
 # === 工具函数 ===
 def get_timestamp():
     """
