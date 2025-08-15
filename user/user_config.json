@@ -1,0 +1,10 @@
+{
+    "button_style": "COD",
+    "ui_transparency": "Medium",
+    "main_volume": 80,
+    "sfx_volume": 80,
+    "music_volume": 80,
+    "mouse_sensitivity": "Medium",
+    "invert_y": false,
+    "auto_run": true
+}

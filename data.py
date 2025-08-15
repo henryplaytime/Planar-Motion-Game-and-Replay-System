@@ -200,6 +200,68 @@ PANEL_TITLE_DETECTION = "键盘状态检测"
 ADRENALINE_ACTIVE = "激活中"
 ADRENALINE_AVAILABLE = "可用"
 
+# === 加载菜单配置 ===
+DEFAULT_MENU_CONFIG = {
+    # 窗口配置
+    "window": {
+        "size": (1920, 1080),
+        "title": "游戏加载中",
+        "frameless": True,
+        "background_color": (0, 0, 0)
+    },
+    
+    # 标题配置
+    "title": {
+        "text": "平面移动游戏与回放系统",
+        "font_path": "C:/Windows/Fonts/simhei.ttf",
+        "font_size": 100,
+        "color": (255, 255, 255),
+        "position": (0.5, 0.175),
+        "enabled": True
+    },
+    
+    # 提示文本配置
+    "prompt": {
+        "text": "按空格键或回车键开始游戏",
+        "font_path": "C:/Windows/Fonts/simhei.ttf",
+        "font_size": 50,
+        "color": (255, 255, 255),
+        "position": (0.5, 0.75),
+        "enabled": True
+    },
+    
+    # 动画线条配置
+    "animation_lines": {
+        "thickness": 10,
+        "length": 500,
+        "vertical_offset": 300,
+        "horizontal_gap": 0,
+        "color": (255, 255, 255),
+        "duration": 2000,
+        "enabled": True
+    },
+    
+    # 淡入淡出配置
+    "fade": {
+        "duration": 2000,
+        "initial_alpha": 0,
+        "enabled": True
+    },
+    
+    # 音乐配置
+    "music": {
+        "path": "sounds/UI_Sounds_Hover.mp3",
+        "enabled": False,
+        "volume": 1
+    },
+    
+    # 游戏配置
+    "game": {
+        "fps": 60,
+        "exit_key": pygame.K_SPACE
+    }
+}
+
 # === 颜色常量扩展 ===
 # 状态文本颜色
 STATUS_WALKING_COLOR = (200, 200, 255)
@@ -337,3 +399,29 @@ def create_background_grid(screen, ground_offset=100, grid_size=40):
                    (screen.get_width(), ground_y), 3)
     
     return background_grid
+
+def get_scaled_button_rect(button, screen):
+    """
+    获取按钮的缩放后矩形区域
+    
+    参数:
+        button: 按钮对象
+        screen: 当前屏幕Surface对象
+    
+    返回:
+        pygame.Rect: 缩放后的按钮矩形
+    """
+    # 获取按钮原始矩形
+    original_rect = button.rect
+    
+    # 计算缩放比例
+    width_ratio = screen.get_width() / BASE_WIDTH
+    height_ratio = screen.get_height() / BASE_HEIGHT
+    
+    # 计算缩放后的位置和尺寸
+    x = original_rect.x * width_ratio
+    y = original_rect.y * height_ratio
+    width = original_rect.width * width_ratio
+    height = original_rect.height * height_ratio
+    
+    return pygame.Rect(x, y, width, height)
