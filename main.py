@@ -4,7 +4,7 @@
 实现游戏模式选择(开始游戏/回放游戏/设置/退出)
 """
 
-from game import Game
+from game import Game 
 from Replay_System import run_replay_mode
 import data
 import pygame

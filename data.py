@@ -7,6 +7,7 @@ import pygame
 import math
 import os
 import time
+import json
 
 # === 屏幕设置 ===
 SCREEN_WIDTH, SCREEN_HEIGHT = 1920, 1080  # 默认屏幕分辨率
@@ -275,6 +276,32 @@ INFO_LIGHT_BLUE = (180, 230, 255)
 ADRENALINE_REMAINING_COLOR = (255, 200, 0)
 ADRENALINE_COOLDOWN_COLOR = (200, 200, 200)
 
+# === 语言文件读取函数 ===
+def load_language_file():
+    """
+    加载语言文件并返回翻译字典
+    """
+    try:
+        # 构建语言文件路径
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+        language_path = os.path.join(current_dir, "config", "language", "zh-CN.json")
+        
+        # 检查文件是否存在
+        if not os.path.exists(language_path):
+            print(f"警告: 语言文件不存在: {language_path}")
+            return {}
+        
+        # 读取并解析JSON文件
+        with open(language_path, 'r', encoding='utf-8') as file:
+            return json.load(file)
+    
+    except Exception as e:
+        print(f"加载语言文件时出错: {e}")
+        return {}
+
+# 加载语言文件
+LANGUAGE_DATA = load_language_file()
+
 # === 工具函数 ===
 def get_timestamp():
     """
@@ -425,3 +452,115 @@ def get_scaled_button_rect(button, screen):
     height = original_rect.height * height_ratio
     
     return pygame.Rect(x, y, width, height)
+
+def get_text(key, default=None):
+    """
+    从语言文件中获取文本
+    参数:
+        key: 语言文件中的键
+        default: 如果键不存在时返回的默认值
+    返回:
+        对应的文本值
+    """
+    if default is None:
+        default = key  # 如果没有提供默认值，使用键本身作为默认值
+    
+    return LANGUAGE_DATA.get(key, default)
+
+# === 退回到硬编码机制 ===
+# === 使用语言文件中的文本替换硬编码机制 ===
+# 按钮文本
+BUTTON_TEXT_START = get_text("BUTTON_TEXT_START", "开始游戏")
+BUTTON_TEXT_REPLAY = get_text("BUTTON_TEXT_REPLAY", "回放游戏")
+BUTTON_TEXT_SETTINGS = get_text("BUTTON_TEXT_SETTINGS", "设置")
+BUTTON_TEXT_EXIT = get_text("BUTTON_TEXT_EXIT", "退出")
+BUTTON_TEXT_BACK = get_text("BUTTON_TEXT_BACK", "返回")
+BUTTON_TEXT_STYLE_FORMAT = get_text("BUTTON_STYLE_FORMAT", "按钮样式: {}")
+
+# 菜单标题文本
+MAIN_MENU_TITLE = get_text("MAIN_MENU_TITLE", "游戏主菜单")
+SETTINGS_MENU_TITLE = get_text("SETTINGS_MENU_TITLE", "设置")
+
+# 信息文本
+MAIN_MENU_INFO = get_text("MAIN_MENU_INFO", "点击按钮选择功能 | 按ESC键退出 | ~键打开控制台")
+SETTINGS_MENU_INFO = get_text("SETTINGS_MENU_INFO", "按ESC键返回主菜单")
+
+# 样式名称映射
+STYLE_NAMES = {
+    "COD": get_text("STYLE_NAME_COD", "COD风格"),
+    "Default": get_text("STYLE_NAME_DEFAULT", "默认")
+}
+
+# 控制信息
+CONTROL_INFO_TEXTS = [
+    get_text("CONTROL_INFO_1", "WASD键: 移动玩家"),
+    get_text("CONTROL_INFO_2", "Shift键: 奔跑加速"),
+    get_text("CONTROL_INFO_3", "Q键: 使用肾上腺素"),
+    get_text("CONTROL_INFO_4", "F1键: 显示/隐藏键盘状态"),
+    get_text("CONTROL_INFO_5", "F2键: 开启/关闭录制"),
+    get_text("CONTROL_INFO_6", "ESC键: 退出游戏")
+]
+
+# 移动信息
+MOVE_INFO_TEXTS = [
+    get_text("MOVE_INFO_1", "移动系统: 平滑加速物理"),
+    get_text("MOVE_INFO_2", "按下方向键加速"),
+    get_text("MOVE_INFO_3", "松开方向键逐渐减速"),
+    get_text("MOVE_INFO_4", "Shift键增加最大速度"),
+    get_text("MOVE_INFO_5", "Q键使用肾上腺素提升速度")
+]
+
+# 玩家状态文本
+PLAYER_STATUS_WALKING = get_text("PLAYER_STATUS_WALKING", "行走中")
+PLAYER_STATUS_RUNNING = get_text("PLAYER_STATUS_RUNNING", "奔跑中")
+PLAYER_STATUS_GROUND = get_text("PLAYER_STATUS_GROUND", "地面")
+PLAYER_STATUS_AIR = get_text("PLAYER_STATUS_AIR", "空中")
+PLAYER_ADRENALINE_ACTIVE = get_text("PLAYER_ADRENALINE_ACTIVE", "肾上腺素激活中!")
+PLAYER_SPEED_FORMAT = get_text("SPEED_FORMAT", "速度: {:.1f} 像素/秒")
+PLAYER_POSITION_FORMAT = get_text("POSITION_FORMAT", "位置: ({}, {})")
+PLAYER_STATUS_FORMAT = get_text("STATUS_FORMAT", "状态: {}")
+PLAYER_ADRENALINE_STATUS_FORMAT = get_text("ADRENALINE_STATUS_FORMAT", "肾上腺素: {}")
+PLAYER_ADRENALINE_REMAINING_FORMAT = get_text("ADRENALINE_REMAINING_FORMAT", "剩余时间: {:.1f}秒")
+PLAYER_ADRENALINE_COOLDOWN_FORMAT = get_text("ADRENALINE_COOLDOWN_FORMAT", "冷却时间: {:.1f}秒")
+
+# 录制状态
+RECORDING_TEXT = get_text("RECORDING_TEXT", "录制中...")
+RECORDING_STATUS_ON = get_text("RECORDING_STATUS_ON", "开启")
+RECORDING_STATUS_OFF = get_text("RECORDING_STATUS_OFF", "关闭")
+RECORDING_STATUS_FORMAT = get_text("RECORDING_STATUS_FORMAT", "录制状态: {}")
+
+# 按键状态
+KEY_PRESSED_STATUS = get_text("KEY_PRESSED_STATUS", "已按下")
+KEY_NOT_PRESSED_STATUS = get_text("KEY_NOT_PRESSED_STATUS", "未按下")
+KEY_STATUS_FORMAT = get_text("KEY_STATUS_FORMAT", "{}: {}")
+
+# 游戏信息
+GAME_INFO_FRAME_TIME_FORMAT = get_text("FRAME_TIME_FORMAT", "帧时间: {:.1f} 毫秒")
+GAME_INFO_SPEED_FORMAT = get_text("GAME_SPEED_FORMAT", "当前速度: {:.1f} 像素/秒")
+GAME_INFO_ACCELERATION_FORMAT = get_text("ACCELERATION_FORMAT", "加速度: {} 像素/秒²")
+GAME_INFO_DECELERATION_FORMAT = get_text("DECELERATION_FORMAT", "减速度: {} 像素/秒²")
+GAME_INFO_FRICTION_FORMAT = get_text("FRICTION_FORMAT", "摩擦力: {}")
+
+# 面板标题
+PANEL_TITLE_GAME = get_text("PANEL_TITLE_GAME", "玩家控制演示 (平面移动游戏)")
+PANEL_TITLE_DETECTION = get_text("PANEL_TITLE_DETECTION", "键盘状态检测")
+
+# 肾上腺素状态
+ADRENALINE_ACTIVE = get_text("ADRENALINE_ACTIVE", "激活中")
+ADRENALINE_AVAILABLE = get_text("ADRENALINE_AVAILABLE", "可用")
+
+# 更新加载菜单配置中的文本
+DEFAULT_MENU_CONFIG["title"]["text"] = get_text("LOADING_TITLE", "平面移动游戏与回放系统")
+DEFAULT_MENU_CONFIG["prompt"]["text"] = get_text("LOADING_PROMPT", "按空格键或回车键开始游戏")
+
+# 更新监控键位的显示文本
+KEYS_TO_MONITOR = {
+    pygame.K_d: get_text("KEY_NAME_D", "D键"),
+    pygame.K_w: get_text("KEY_NAME_W", "W键"),
+    pygame.K_a: get_text("KEY_NAME_A", "A键"),
+    pygame.K_s: get_text("KEY_NAME_S", "S键"),
+    pygame.K_LSHIFT: get_text("KEY_NAME_LSHIFT", "左Shift键"),
+    pygame.K_RSHIFT: get_text("KEY_NAME_RSHIFT", "右Shift键"),
+    pygame.K_F1: get_text("KEY_NAME_F1", "F1键"),
+    pygame.K_F2: get_text("KEY_NAME_F2", "F2键")
+}

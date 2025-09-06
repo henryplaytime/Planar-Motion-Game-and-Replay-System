@@ -1,0 +1,100 @@
+{
+    "BUTTON_TEXT_START": "开始游戏",
+    "BUTTON_TEXT_REPLAY": "回放游戏",
+    "BUTTON_TEXT_SETTINGS": "设置",
+    "BUTTON_TEXT_EXIT": "退出",
+    "BUTTON_TEXT_BACK": "返回",
+    "BUTTON_STYLE_FORMAT": "按钮样式: {}",
+    
+    "MAIN_MENU_TITLE": "游戏主菜单",
+    "SETTINGS_MENU_TITLE": "设置",
+    
+    "MAIN_MENU_INFO": "点击按钮选择功能 | 按ESC键退出 | ~键打开控制台",
+    "SETTINGS_MENU_INFO": "按ESC键返回主菜单",
+    
+    "STYLE_NAME_COD": "COD风格",
+    "STYLE_NAME_DEFAULT": "默认",
+    
+    "CONTROL_INFO_1": "WASD键: 移动玩家",
+    "CONTROL_INFO_2": "Shift键: 奔跑加速",
+    "CONTROL_INFO_3": "Q键: 使用肾上腺素",
+    "CONTROL_INFO_4": "F1键: 显示/隐藏键盘状态",
+    "CONTROL_INFO_5": "F2键: 开启/关闭录制",
+    "CONTROL_INFO_6": "ESC键: 退出游戏",
+    
+    "MOVE_INFO_1": "移动系统: 平滑加速物理",
+    "MOVE_INFO_2": "按下方向键加速",
+    "MOVE_INFO_3": "松开方向键逐渐减速",
+    "MOVE_INFO_4": "Shift键增加最大速度",
+    "MOVE_INFO_5": "Q键使用肾上腺素提升速度",
+    
+    "PLAYER_STATUS_WALKING": "行走中",
+    "PLAYER_STATUS_RUNNING": "奔跑中",
+    "PLAYER_STATUS_GROUND": "地面",
+    "PLAYER_STATUS_AIR": "空中",
+    "PLAYER_ADRENALINE_ACTIVE": "肾上腺素激活中!",
+    
+    "SPEED_FORMAT": "速度: {:.1f} 像素/秒",
+    "POSITION_FORMAT": "位置: ({}, {})",
+    "STATUS_FORMAT": "状态: {}",
+    "ADRENALINE_STATUS_FORMAT": "肾上腺素: {}",
+    "ADRENALINE_REMAINING_FORMAT": "剩余时间: {:.1f}秒",
+    "ADRENALINE_COOLDOWN_FORMAT": "冷却时间: {:.1f}秒",
+    
+    "RECORDING_TEXT": "录制中...",
+    "RECORDING_STATUS_ON": "开启",
+    "RECORDING_STATUS_OFF": "关闭",
+    "RECORDING_STATUS_FORMAT": "录制状态: {}",
+    
+    "KEY_PRESSED_STATUS": "已按下",
+    "KEY_NOT_PRESSED_STATUS": "未按下",
+    "KEY_STATUS_FORMAT": "{}: {}",
+    
+    "FRAME_TIME_FORMAT": "帧时间: {:.1f} 毫秒",
+    "GAME_SPEED_FORMAT": "当前速度: {:.1f} 像素/秒",
+    "ACCELERATION_FORMAT": "加速度: {} 像素/秒²",
+    "DECELERATION_FORMAT": "减速度: {} 像素/秒²",
+    "FRICTION_FORMAT": "摩擦力: {}",
+    
+    "PANEL_TITLE_GAME": "玩家控制演示 (平面移动游戏)",
+    "PANEL_TITLE_DETECTION": "键盘状态检测",
+    
+    "ADRENALINE_ACTIVE": "激活中",
+    "ADRENALINE_AVAILABLE": "可用",
+    
+    "LOADING_TITLE": "平面移动游戏与回放系统",
+    "LOADING_PROMPT": "按空格键或回车键开始游戏",
+    
+    "KEY_NAME_D": "D键",
+    "KEY_NAME_W": "W键",
+    "KEY_NAME_A": "A键",
+    "KEY_NAME_S": "S键",
+    "KEY_NAME_LSHIFT": "左Shift键",
+    "KEY_NAME_RSHIFT": "右Shift键",
+    "KEY_NAME_F1": "F1键",
+    "KEY_NAME_F2": "F2键",
+     
+    "SETTINGS_CATEGORY_UI": "界面",
+    "SETTINGS_CATEGORY_AUDIO": "音频",
+    "SETTINGS_CATEGORY_GAMEPLAY": "游戏性",
+    "SETTINGS_CATEGORY_CONTROLS": "控制",
+    
+    "SETTING_BUTTON_STYLE": "按钮样式",
+    "SETTING_BACK_BUTTON": "返回",
+    "SETTING_APPLY_BUTTON": "应用",
+    
+    "SETTINGS_DESCRIPTION_UI_1": "此部分允许您自定义游戏的视觉外观。",
+    "SETTINGS_DESCRIPTION_UI_2": "",
+    "SETTINGS_DESCRIPTION_UI_3": "按钮样式: 选择游戏按钮的视觉风格。",
+    "SETTINGS_DESCRIPTION_UI_4": "使命召唤风格提供更现代、更专业的",
+    "SETTINGS_DESCRIPTION_UI_5": "外观，而默认风格则更简洁。",
+    
+    "SETTINGS_DESCRIPTION_AUDIO_1": "此部分控制游戏的所有音频设置。",
+    
+    "SETTINGS_DESCRIPTION_GAMEPLAY_1": "此部分控制游戏的玩法设置。",
+    
+    "SETTINGS_DESCRIPTION_CONTROLS_1": "此部分控制游戏的按键绑定。",
+    
+    "SETTINGS_SAVED": "设置已保存",
+    "BUTTON_STYLE_CHANGED": "按钮样式已切换为 {}"
+}

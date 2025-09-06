@@ -1,0 +1,100 @@
+{
+    "BUTTON_TEXT_START": "Start Game",
+    "BUTTON_TEXT_REPLAY": "Replay Game",
+    "BUTTON_TEXT_SETTINGS": "Settings",
+    "BUTTON_TEXT_EXIT": "Exit",
+    "BUTTON_TEXT_BACK": "Back",
+    "BUTTON_STYLE_FORMAT": "Button Style: {}",
+    
+    "MAIN_MENU_TITLE": "Game Main Menu",
+    "SETTINGS_MENU_TITLE": "Settings",
+    
+    "MAIN_MENU_INFO": "Click buttons to select function | Press ESC to exit | ~ key to open console",
+    "SETTINGS_MENU_INFO": "Press ESC to return to main menu",
+    
+    "STYLE_NAME_COD": "COD Style",
+    "STYLE_NAME_DEFAULT": "Default",
+    
+    "CONTROL_INFO_1": "WASD keys: Move player",
+    "CONTROL_INFO_2": "Shift key: Sprint",
+    "CONTROL_INFO_3": "Q key: Use adrenaline",
+    "CONTROL_INFO_4": "F1 key: Show/hide keyboard status",
+    "CONTROL_INFO_5": "F2 key: Start/stop recording",
+    "CONTROL_INFO_6": "ESC key: Exit game",
+    
+    "MOVE_INFO_1": "Movement system: Smooth acceleration physics",
+    "MOVE_INFO_2": "Press direction keys to accelerate",
+    "MOVE_INFO_3": "Release keys to gradually decelerate",
+    "MOVE_INFO_4": "Shift key increases max speed",
+    "MOVE_INFO_5": "Q key uses adrenaline to boost speed",
+    
+    "PLAYER_STATUS_WALKING": "Walking",
+    "PLAYER_STATUS_RUNNING": "Running",
+    "PLAYER_STATUS_GROUND": "Ground",
+    "PLAYER_STATUS_AIR": "Air",
+    "PLAYER_ADRENALINE_ACTIVE": "Adrenaline activated!",
+    
+    "SPEED_FORMAT": "Speed: {:.1f} pixels/sec",
+    "POSITION_FORMAT": "Position: ({}, {})",
+    "STATUS_FORMAT": "Status: {}",
+    "ADRENALINE_STATUS_FORMAT": "Adrenaline: {}",
+    "ADRENALINE_REMAINING_FORMAT": "Remaining time: {:.1f}sec",
+    "ADRENALINE_COOLDOWN_FORMAT": "Cooldown: {:.1f}sec",
+    
+    "RECORDING_TEXT": "Recording...",
+    "RECORDING_STATUS_ON": "On",
+    "RECORDING_STATUS_OFF": "Off",
+    "RECORDING_STATUS_FORMAT": "Recording status: {}",
+    
+    "KEY_PRESSED_STATUS": "Pressed",
+    "KEY_NOT_PRESSED_STATUS": "Not pressed",
+    "KEY_STATUS_FORMAT": "{}: {}",
+    
+    "FRAME_TIME_FORMAT": "Frame time: {:.1f} ms",
+    "GAME_SPEED_FORMAT": "Current speed: {:.1f} pixels/sec",
+    "ACCELERATION_FORMAT": "Acceleration: {} pixels/sec²",
+    "DECELERATION_FORMAT": "Deceleration: {} pixels/sec²",
+    "FRICTION_FORMAT": "Friction: {}",
+    
+    "PANEL_TITLE_GAME": "Player Control Demo (Planar Movement Game)",
+    "PANEL_TITLE_DETECTION": "Keyboard Status Detection",
+    
+    "ADRENALINE_ACTIVE": "Active",
+    "ADRENALINE_AVAILABLE": "Available",
+    
+    "LOADING_TITLE": "Planar Movement Game and Replay System",
+    "LOADING_PROMPT": "Press SPACE or ENTER to start game",
+    
+    "KEY_NAME_D": "D key",
+    "KEY_NAME_W": "W key",
+    "KEY_NAME_A": "A key",
+    "KEY_NAME_S": "S key",
+    "KEY_NAME_LSHIFT": "Left Shift key",
+    "KEY_NAME_RSHIFT": "Right Shift key",
+    "KEY_NAME_F1": "F1 key",
+    "KEY_NAME_F2": "F2 key",
+    
+    "SETTINGS_CATEGORY_UI": "Interface",
+    "SETTINGS_CATEGORY_AUDIO": "Audio",
+    "SETTINGS_CATEGORY_GAMEPLAY": "Gameplay",
+    "SETTINGS_CATEGORY_CONTROLS": "Controls",
+    
+    "SETTING_BUTTON_STYLE": "Button Style",
+    "SETTING_BACK_BUTTON": "Back",
+    "SETTING_APPLY_BUTTON": "Apply",
+    
+    "SETTINGS_DESCRIPTION_UI_1": "This section allows you to customize the visual appearance of the game.",
+    "SETTINGS_DESCRIPTION_UI_2": "",
+    "SETTINGS_DESCRIPTION_UI_3": "Button Style: Choose the visual style of game buttons.",
+    "SETTINGS_DESCRIPTION_UI_4": "COD style provides a more modern and professional",
+    "SETTINGS_DESCRIPTION_UI_5": "look, while the default style is more minimalistic.",
+    
+    "SETTINGS_DESCRIPTION_AUDIO_1": "This section controls all audio settings of the game.",
+    
+    "SETTINGS_DESCRIPTION_GAMEPLAY_1": "This section controls the gameplay settings.",
+    
+    "SETTINGS_DESCRIPTION_CONTROLS_1": "This section controls the key bindings.",
+    
+    "SETTINGS_SAVED": "Settings saved",
+    "BUTTON_STYLE_CHANGED": "Button style changed to {}"
+}
