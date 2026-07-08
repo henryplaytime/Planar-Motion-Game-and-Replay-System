@@ -21,6 +21,10 @@
 
 ## 版本历史更新
 
+### v0.2.8(2026-07-08) - 分辨率调整
+
+* 使用Python 的tkinter的方式，改写了屏幕分辨率
+
 ### v0.2.6(2025-08-15) - 设置系统与加载界面重构
 
 * **重构设置界面**：
@@ -815,57 +819,57 @@ def main_menu(user_config):
             # ===== 1. 处理窗口事件 =====
             if event.type == pygame.QUIT:
                 running = False
-      
+    
             # 窗口大小调整事件
             elif event.type == pygame.VIDEORESIZE:
                 screen = pygame.display.set_mode((event.w, event.h), pygame.RESIZABLE)
                 # 重新创建按钮以适应新尺寸
                 buttons = create_menu_buttons(screen, button_style)
-      
+    
             # ===== 2. 处理键盘事件 =====
             elif event.type == pygame.KEYDOWN:
                 # 2.1 只保留控制台切换键（反引号键）
                 if event.key == pygame.K_BACKQUOTE:
                     console.toggle()
                     continue
-          
+        
                 # 2.2 只保留控制台事件处理
                 if console.handle_event(event):
                     continue
-          
+        
                 # 2.3 只保留ESC键退出功能
                 elif event.key == pygame.K_ESCAPE:
                     running = False
-      
+    
             # ===== 3. 处理鼠标事件 =====
             # 3.1 鼠标移动事件
             elif event.type == pygame.MOUSEMOTION:
                 # 更新鼠标位置
                 mouse_pos = event.pos
-          
+        
                 # 检查鼠标悬停状态
                 found_hover = False
                 for i, button in enumerate(buttons):
                     # 获取按钮缩放后的矩形
                     scaled_rect = get_scaled_button_rect(button)
-              
+            
                     # 检查鼠标是否悬停在按钮上
                     if scaled_rect.collidepoint(mouse_pos):
                         # 更新当前选择
                         current_selected = i
-                  
+                
                         # 如果切换到新按钮，播放悬停音效
                         if i != last_hover_index and hover_sound:
                             hover_sound.play()
                         last_hover_index = i
                         found_hover = True
                         break
-          
+        
                 # 如果没有按钮被悬停
                 if not found_hover:
                     current_selected = -1
                     last_hover_index = -1
-      
+    
             # 3.2 鼠标点击事件
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 # 左键点击
@@ -873,15 +877,15 @@ def main_menu(user_config):
                     # 检查点击了哪个按钮
                     for i, button in enumerate(buttons):
                         scaled_rect = get_scaled_button_rect(button)
-                  
+                
                         # 如果点击在当前按钮上
                         if scaled_rect.collidepoint(event.pos):
                             if click_sound:
                                 click_sound.play()
-                      
+                    
                             # 设置按钮点击状态
                             button.state = "active"
-                      
+                    
                             # 立即绘制一次动画状态
                             screen.fill(data.BACKGROUND)
                             title_font_size = data.get_scaled_font(data.MENU_TITLE_FONT_SIZE, screen)
@@ -895,17 +899,17 @@ def main_menu(user_config):
                             draw_buttons(screen, buttons, title_pos, line_y)
                             pygame.display.flip()
                             pygame.time.delay(data.BUTTON_CLICK_ANIMATION_DELAY)  # 短暂延迟让动画可见
-                      
+                    
                             # 处理菜单选择
                             result = handle_menu_selection(button.text, screen, console, button_style)
                             recreate_buttons, new_style = result
-                  
+                
                             # 更新按钮样式
                             if new_style != button_style:
                                 button_style = new_style
                                 user_config["button_style"] = new_style
                                 print(f"按钮样式已更新为: {button_style}")
-                  
+                
                             # 重新创建按钮
                             if recreate_buttons:
                                 buttons = create_menu_buttons(screen, button_style)
@@ -969,7 +973,7 @@ def create_button(style, x, y, width, height, text, screen):
     "effects": {
       "speed_multiplier": 1.5,  
       "duration": 5.0,  
-      "cooldown": 15.0    
+      "cooldown": 15.0  
     }
   }
 }
