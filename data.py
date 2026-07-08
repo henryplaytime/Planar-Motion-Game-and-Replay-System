@@ -8,10 +8,21 @@ import math
 import os
 import time
 import json
+import tkinter as tk
+
+def get_screen_resolution():
+    """获取屏幕分辨率（逻辑像素，受系统缩放影响）"""
+    root = tk.Tk()
+    root.withdraw()  # 隐藏主窗口，避免弹窗
+    width = root.winfo_screenwidth()    # 获取屏幕宽度
+    height = root.winfo_screenheight()  # 获取屏幕高度
+    root.destroy()
+    return {"width": width, "height": height}
+
 
 # === 屏幕设置 ===
-SCREEN_WIDTH, SCREEN_HEIGHT = 1920, 1080  # 默认屏幕分辨率
-BASE_WIDTH, BASE_HEIGHT = 1920, 1080  # 基准分辨率(用于缩放计算)
+SCREEN_WIDTH, SCREEN_HEIGHT = get_screen_resolution()["width"], get_screen_resolution()["height"]  # 默认屏幕分辨率
+BASE_WIDTH, BASE_HEIGHT = get_screen_resolution()["width"], get_screen_resolution()["height"]  # 基准分辨率(用于缩放计算)
 
 # === 音效路径 ===
 SOUND_MENU_CLICK = "sounds/UI_Sounds_Click.mp3"  # 菜单点击音效
