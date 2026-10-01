@@ -80,7 +80,7 @@ PLAYER_MIDDLE_COLOR = (255, 255, 255)  # 玩家中层颜色(白色)
 PLAYER_INNER_COLOR = (70, 130, 180)  # 玩家内层颜色(深蓝)
 
 # === 录制系统常量 ===
-RECORD_VERSION = 2  # 录制文件格式版本
+RECORD_VERSION = 3  # 录制文件格式版本
 RECORD_FPS = 64  # 录制帧率
 RECORD_PREFIX_COMMAND = "C:"  # 高阶指令前缀
 RECORD_PREFIX_INPUT = "I:"  # 原始输入前缀
@@ -185,6 +185,7 @@ PLAYER_STATUS_FORMAT = "状态: {}"
 PLAYER_ADRENALINE_STATUS_FORMAT = "肾上腺素: {}"
 PLAYER_ADRENALINE_REMAINING_FORMAT = "剩余时间: {:.1f}秒"
 PLAYER_ADRENALINE_COOLDOWN_FORMAT = "冷却时间: {:.1f}秒"
+_PLAYER_IMAGE_CACHE = None
 
 # 录制状态
 RECORDING_TEXT = "录制中..."
@@ -330,19 +331,20 @@ def is_within_screen(pos, screen):
     return 0 <= scaled_x <= screen.get_width() and 0 <= scaled_y <= screen.get_height()
 
 def load_player_image():
-    """
-    加载玩家图像
-    """
+    global _PLAYER_IMAGE_CACHE
+    if _PLAYER_IMAGE_CACHE is not None:
+        return _PLAYER_IMAGE_CACHE
     try:
-        player_image = pygame.image.load("player_image.png").convert_alpha()
-        return pygame.transform.scale(player_image, PLAYER_SIZE)
-    except:
+        img = pygame.image.load("player_image.png").convert_alpha()
+        _PLAYER_IMAGE_CACHE = pygame.transform.scale(img, PLAYER_SIZE)
+    except Exception:
         surface = pygame.Surface(PLAYER_SIZE, pygame.SRCALPHA)
         center = (PLAYER_SIZE[0] // 2, PLAYER_SIZE[1] // 2)
         pygame.draw.circle(surface, PLAYER_OUTER_COLOR, center, 35)
         pygame.draw.circle(surface, PLAYER_MIDDLE_COLOR, center, 30)
         pygame.draw.circle(surface, PLAYER_INNER_COLOR, center, 20)
-        return surface
+        _PLAYER_IMAGE_CACHE = surface
+    return _PLAYER_IMAGE_CACHE
 
 def get_font(size=DEFAULT_FONT_SIZE):
     """

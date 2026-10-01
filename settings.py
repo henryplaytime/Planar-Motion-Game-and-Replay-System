@@ -1,13 +1,19 @@
 """
-设置模块
-包含设置界面相关的所有常量、函数和UI逻辑
-当主程序需要进入设置界面时，会调用此模块
+设置模块。
+
+现在只保留：
+- 设置分类常量
+- 控件类 StyleSelector
+- 工厂函数 create_settings_buttons / create_settings_controls
+- 纯渲染函数 draw_settings_ui
+- 保存函数 save_settings
+
+主循环 / 事件分发 已迁移到 scenes/settings_scene.py。
 """
 
 import pygame
 import os
 import json
-import sys
 from data import (
     BACKGROUND, TEXT_COLOR, ACCENT_COLOR, PANEL_COLOR, UI_HIGHLIGHT,
     MENU_TITLE_FONT_SIZE, DEFAULT_FONT_SIZE, INFO_FONT_SIZE,
@@ -238,221 +244,6 @@ def create_settings_controls(screen, user_config):
     
     return controls
 
-def settings_menu(screen, console, current_style, user_config):
-    """
-    设置菜单函数 - 重构为分页式界面
-    
-    参数:
-        screen: Pygame屏幕对象
-        console: 控制台对象
-        current_style: 当前按钮样式
-        user_config: 用户配置字典
-        
-    返回:
-        元组 (是否需要重新创建主菜单按钮, 新的按钮样式)
-    """
-    button_style = current_style
-    
-    
-    # 创建设置按钮
-    buttons = create_settings_buttons(screen, button_style)
-    
-    # 创建设置控件
-    settings_controls = create_settings_controls(screen, user_config)
-    
-    # 音频
-    try:
-        click_sound = pygame.mixer.Sound(SOUND_MENU_CLICK)
-        hover_sound = pygame.mixer.Sound(SOUND_MENU_HOVER)
-    except:
-        click_sound = None
-        hover_sound = None
-    
-    # 当前选中的选项索引
-    current_selected = -1
-    last_hover_index = -1
-    current_category = 0
-    
-    # 记录初始样式
-    initial_style = current_style
-    style_changed = False
-    
-    # 添加变量跟踪悬停状态
-    hover_changed = False
-
-    # 设置菜单循环
-    running = True
-    while running:
-        mouse_pos = pygame.mouse.get_pos()
-        # 更新所有控件的悬停状态
-        hover_changed = False
-        current_category_name = SETTINGS_CATEGORIES[current_category]["name"]
-        category_controls = settings_controls.get(current_category_name, [])
-        
-        for setting_name, control in category_controls:
-            if hasattr(control, 'update_hover_state'):
-                hover_changed = control.update_hover_state(mouse_pos) or hover_changed
-        
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                pygame.quit()
-                sys.exit()
-            
-            # 窗口大小调整
-            elif event.type == pygame.VIDEORESIZE:
-                screen = pygame.display.set_mode((event.w, event.h), pygame.RESIZABLE)
-                buttons = create_settings_buttons(screen, button_style)
-                settings_controls = create_settings_controls(screen, user_config)
-            
-            # 键盘事件
-            elif event.type == pygame.KEYDOWN:
-                # 控制台切换键
-                if event.key == pygame.K_BACKQUOTE:
-                    console.toggle()
-                    continue
-                # ESC键返回主菜单
-                elif event.key == pygame.K_ESCAPE:
-                    running = False
-                else:
-                    if console.handle_event(event):
-                        continue
-            
-            # 鼠标移动事件
-            elif event.type == pygame.MOUSEMOTION:
-                mouse_pos = event.pos
-                # 首先更新控件悬停状态
-                hover_changed = False
-                for setting_name, control in category_controls:
-                    if hasattr(control, 'update_hover_state'):
-                        hover_changed = control.update_hover_state(mouse_pos) or hover_changed
-
-                
-                # 检查分类按钮悬停
-                category_hovered = False
-                category_width = screen.get_width() // len(SETTINGS_CATEGORIES)
-                for i in range(len(SETTINGS_CATEGORIES)):
-                    rect = pygame.Rect(i * category_width, 100, category_width, 60)
-                    if rect.collidepoint(mouse_pos):
-                        if i != last_hover_index:
-                            current_selected = i
-                            if hover_sound and not hover_changed:
-                                hover_sound.play()
-                                hover_changed = True
-                            last_hover_index = i
-                        category_hovered = True
-                        break
-                    
-                # 检查设置选项悬停
-                button_hovered = False  # 确保变量被初始化
-                if not category_hovered:
-                    button_hovered = False
-                    for i, button in enumerate(buttons):
-                        scaled_rect = get_scaled_button_rect(button, screen)
-                        if scaled_rect.collidepoint(mouse_pos):
-                            if (len(SETTINGS_CATEGORIES) + i) != last_hover_index:
-                                current_selected = len(SETTINGS_CATEGORIES) + i
-                                if hover_sound and not hover_changed:
-                                    hover_sound.play()
-                                    hover_changed = True
-                                last_hover_index = len(SETTINGS_CATEGORIES) + i
-                            button_hovered = True
-                            break
-                
-                # 如果都没有悬停，重置
-                if not category_hovered and not button_hovered and not hover_changed:
-                    if last_hover_index != -1:
-                        current_selected = -1
-                        last_hover_index = -1
-            
-            # 鼠标点击事件
-            elif event.type == pygame.MOUSEBUTTONDOWN:
-                if event.button == 1:  # 左键
-                    # 检查分类按钮点击
-                    category_width = screen.get_width() // len(SETTINGS_CATEGORIES)
-                    for i in range(len(SETTINGS_CATEGORIES)):
-                        rect = pygame.Rect(i * category_width, 100, category_width, 60)
-                        if rect.collidepoint(event.pos):
-                            if click_sound:
-                                click_sound.play()
-                            current_category = i
-                            break
-                    
-                    # 检查底部按钮点击
-                    for i, button in enumerate(buttons):
-                        scaled_rect = get_scaled_button_rect(button, screen)
-                        if scaled_rect.collidepoint(event.pos):
-                            if click_sound:
-                                click_sound.play()
-                            
-                            # 设置按钮点击状态
-                            button.state = "active"
-                            
-                            # 立即绘制一次动画状态
-                            draw_settings_ui(
-                                screen, 
-                                console, 
-                                SETTINGS_CATEGORIES, 
-                                current_category, 
-                                buttons, 
-                                settings_controls
-                            )
-                            pygame.display.flip()
-                            pygame.time.delay(BUTTON_CLICK_ANIMATION_DELAY)
-                            
-                            # 处理设置选择
-                            if i == 0:  # 返回按钮
-                                running = False
-                            elif i == 1:  # 应用按钮
-                                # 保存设置到配置文件
-                                save_settings(user_config, button_style, settings_controls)
-                                console.core.add_output("设置已保存")
-                                running = False
-                            break
-                    
-                    # 检查设置控件点击
-                    current_category_name = SETTINGS_CATEGORIES[current_category]["name"]
-                    category_controls = settings_controls.get(current_category_name, [])
-                    
-                    for setting_name, control in category_controls:
-                        if control.handle_event(event):
-                            # 添加点击音效
-                            if click_sound:
-                                click_sound.play()
-
-                            # 处理按钮样式切换
-                            if setting_name == "按钮样式":
-                                button_style = control.get_current_style()
-                                style_changed = True
-                                console.core.add_output(f"按钮样式已切换为 {STYLE_NAMES.get(button_style, '默认')}")
-                                # 重新创建按钮以应用新样式
-                                buttons = create_settings_buttons(screen, button_style)
-                            break # 避免多次触发
-        
-        # 更新按钮状态
-        for button in buttons:
-            button.state = "idle"
-        
-        if current_selected >= len(SETTINGS_CATEGORIES) and current_selected < len(SETTINGS_CATEGORIES) + len(buttons):
-            buttons[current_selected - len(SETTINGS_CATEGORIES)].state = "hover"
-        
-        mouse_click = False
-        for button in buttons:
-            button.update(mouse_pos, mouse_click)
-        
-        # 渲染设置界面
-        draw_settings_ui(
-            screen, 
-            console, 
-            SETTINGS_CATEGORIES, 
-            current_category, 
-            buttons, 
-            settings_controls
-        )
-        
-        pygame.display.flip()
-    
-    # 返回样式是否被更改
-    return style_changed or button_style != initial_style, button_style
 
 def draw_settings_ui(screen, console, categories, current_category, buttons, settings_controls):
     """
